@@ -43,9 +43,9 @@ Bundle the archived event and the chosen illumination values with the static bui
 
 | Branch | Deliverable | Acceptance check |
 | --- | --- | --- |
-| `main` | Vite entry point, TypeScript configuration and shared game types | A fresh checkout installs dependencies and produces a static build. |
+| `main` | TypeScript and Vite configuration, shared game types | TypeScript checks pass. |
 | `feat/turn-engine` | Forecast, resolution and outcome | A scripted run covers shadow, shelter, harvest and over-budget input. |
 | `feat/mission-data` | Six-turn scenario linked to NASA SVS frames and the archived DONKI event | Each illumination state points to a frame. The DONKI record triggers the alert, the briefing links to its source, and the mission has a winning route. |
-| `feat/mission-screen` | Briefing, resource controls, debrief and restart | A player can complete and replay the mission on phone and desktop. |
+| `feat/mission-screen` | Frontend entry point, Telegram SDK initialization, briefing, resource controls, debrief and restart | The frontend builds to `dist`, and a player can complete and replay the mission on phone and desktop. |
 
 Start the engine, data and UI branches from the shell in `main`. Use `src/game/types.ts` as the shared contract. The engine and UI should agree on the forecast and resolution signatures before wiring them together. A first playable build is ready once the real scenario runs through the UI and the debrief explains both a successful and a failed mission.

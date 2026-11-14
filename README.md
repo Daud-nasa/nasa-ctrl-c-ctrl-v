@@ -18,6 +18,8 @@ Lunar Shift is a short browser-based mission trainer for students. Players run a
 
 ## Run locally
 
+The frontend is being replaced. The commands below apply once the new frontend entry point is committed.
+
 Use Node.js 22.12 or later on the 22.x line, or Node.js 24 or later.
 
 ```sh
@@ -27,7 +29,7 @@ npm run dev
 
 Open the local URL printed by Vite. `npm run build` checks TypeScript and creates the static site in `dist/`. Run `npm run preview` after a build to check the production output locally.
 
-The starter page and shared game types are ready. The first playable build begins with the simulation, mission data, and interface described in the architecture.
+The shared game types and archived NASA data are available for the new frontend.
 
 ## Deploy to Render and open in Telegram
 
@@ -36,7 +38,7 @@ The starter page and shared game types are ready. The first playable build begin
 3. In [@BotFather](https://t.me/BotFather), create a bot with `/newbot` or select an existing bot. Run `/setmenubutton`, choose the bot, enter the Render HTTPS URL, and name the button `Play Lunar Shift`.
 4. Open the bot on your phone and tap the menu button. To add a direct `https://t.me/<bot_username>?startapp` link, enable **Main Mini App** in the bot's settings in BotFather and set the same URL.
 
-The hosted page also opens in a regular browser. The Mini App uses the Telegram client SDK to signal readiness and expand the game view. The app runs with bundled mission data and needs no bot token or backend service.
+The new frontend should initialize the Telegram client SDK and run in a regular browser as well as in Telegram. The mission uses bundled data and needs no bot token or backend service.
 
 ## Team workflow
 
