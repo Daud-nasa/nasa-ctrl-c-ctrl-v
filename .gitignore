@@ -3,6 +3,8 @@
 node_modules/
 dist/
 coverage/
+backend/.gradle/
+backend/build/
 .env
 .env.*
 !.env.example

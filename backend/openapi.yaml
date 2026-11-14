@@ -155,14 +155,19 @@ paths:
           example: '2024-05-11'
       responses:
         '200':
-          description: NASA DONKI JSON response
+          description: Normalized NASA DONKI SEP events
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  type: object
-                  additionalProperties: true
+                  $ref: '#/components/schemas/NasaSepEvent'
+              example:
+                - id: '2024-05-11T04:07:00-SEP-001'
+                  eventTime: '2024-05-11T04:07Z'
+                  instruments: ['STEREO A: IMPACT 13-100 MeV']
+                  sourceUrl: 'https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/30717/-1'
+                  relatedEventIds: ['2024-05-11T01:10:00-FLR-001']
         '400':
           $ref: '#/components/responses/BadRequest'
         '503':
@@ -290,3 +295,18 @@ components:
       properties:
         code: { type: string }
         message: { type: string }
+    NasaSepEvent:
+      type: object
+      required: [id, eventTime, instruments, sourceUrl, relatedEventIds]
+      properties:
+        id: { type: string }
+        eventTime: { type: string, format: date-time }
+        instruments:
+          type: array
+          items: { type: string }
+        sourceUrl:
+          type: [string, 'null']
+          format: uri
+        relatedEventIds:
+          type: array
+          items: { type: string }

@@ -9,3 +9,17 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 24.22.1
+  - type: web
+    name: lunar-shift-backend
+    runtime: docker
+    plan: free
+    branch: main
+    dockerContext: backend
+    dockerfilePath: backend/Dockerfile
+    healthCheckPath: /actuator/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NASA_API_KEY
+        sync: false
+      - key: FRONTEND_ALLOWED_ORIGINS
+        sync: false

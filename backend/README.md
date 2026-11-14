@@ -4,11 +4,13 @@ Spring Boot API for mission scenarios, turn forecasts, turn resolution, and NASA
 
 ## Run locally
 
-Use Java 21 and Gradle 8.14 or later:
+Use Java 21:
 
 ```sh
-gradle bootRun
+./gradlew bootRun
 ```
+
+Run `./gradlew test` for tests or `./gradlew build` for the complete local build. The Gradle Wrapper pins the build tool version.
 
 Base URL: `http://localhost:8080/api/v1`. The full endpoint contract and example payloads are in [`openapi.yaml`](openapi.yaml).
 
@@ -55,4 +57,8 @@ Send the example to `POST http://localhost:8080/api/v1/missions/lunar-south-pole
 
 ## NASA data and local configuration
 
-`GET /api/v1/nasa/solar-particle-events?startDate=2024-05-11&endDate=2024-05-11` proxies NASA DONKI SEP data. Set `NASA_API_KEY` in the backend environment. The API key is never sent to the browser. The default CORS allowlist is ports 3000 on localhost; override it with comma-separated `FRONTEND_ALLOWED_ORIGINS` values when needed. NASA service errors return `503` and are not replaced by the archived scenario snapshot.
+`GET /api/v1/nasa/solar-particle-events?startDate=2024-05-11&endDate=2024-05-11` proxies NASA DONKI SEP data as a stable DTO with `id`, `eventTime`, `instruments`, `sourceUrl`, and `relatedEventIds`. Set `NASA_API_KEY` in the backend environment. The API key is never sent to the browser. The default CORS allowlist is ports 3000 on localhost; override it with comma-separated `FRONTEND_ALLOWED_ORIGINS` values when needed. NASA service errors return `503` and are not replaced by the archived scenario snapshot.
+
+## Render deployment
+
+The root `render.yaml` keeps the current static frontend service and adds a Docker-based Java web service. Render builds and tests the backend image with `backend/Dockerfile`, checks `/actuator/health`, and binds Spring Boot to Render's `PORT`. On the first Blueprint sync, provide `NASA_API_KEY` and the deployed frontend URL in `FRONTEND_ALLOWED_ORIGINS`; neither value is committed to the repository.
