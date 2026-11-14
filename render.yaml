@@ -22,4 +22,4 @@ services:
       - key: NASA_API_KEY
         sync: false
       - key: FRONTEND_ALLOWED_ORIGINS
-        sync: false
+        value: https://lunar-shift.onrender.com,http://localhost:5173,http://localhost:3000
