@@ -1,15 +1,30 @@
 import { Button } from '@shared/ui/Button'
 
-export function Welcome() {
+type WelcomeProps = {
+  onStart: () => void
+  isLoading: boolean
+  error: string | null
+}
+
+export function Welcome({ onStart, isLoading, error }: WelcomeProps) {
   return (
     <section className="welcome">
-      <p className="eyebrow">Feature-Sliced Design · Vite · TypeScript</p>
-      <h1>Your app starts here.</h1>
-      <p className="description">
-        The project is organized by business responsibility, so features can grow
-        without turning the codebase into a dependency maze.
-      </p>
-      <Button>Explore the architecture</Button>
+      <img
+        className="welcome__banner"
+        src="/assets/lunar-shift-banner.png"
+        alt="Lunar Shift outpost on the Moon with the game title"
+      />
+      <div className="welcome__content">
+        <p className="eyebrow">Lunar south pole mission trainer</p>
+        <h1>Keep the outpost alive.</h1>
+        <p className="description">
+          Balance power, food, crops, and crew safety across six turns on the Moon.
+        </p>
+        <Button onClick={onStart} disabled={isLoading}>
+          {isLoading ? 'Loading mission…' : 'Start mission'}
+        </Button>
+        {error && <p className="error-message" role="alert">{error}</p>}
+      </div>
     </section>
   )
 }
