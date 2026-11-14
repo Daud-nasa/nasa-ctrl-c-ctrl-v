@@ -22,6 +22,20 @@ export interface Mission {
   lifeSupportCost: number;
   greenhouseCost: number;
   harvestTarget: number;
+  rules: MissionRules;
+}
+
+/** Scenario-authored values for consequences that need game balancing. */
+export interface MissionRules {
+  foodConsumptionPerTurn: number;
+  cropGrowthPerGreenhouseTurn: number;
+  harvestThreshold: number;
+  harvestYield: number;
+  foodPerHarvest: number;
+  radiationExposurePerEvent: number;
+  shelteredRadiationExposurePerEvent: number;
+  crewAtRiskRadiation: number;
+  crewCriticalRadiation: number;
 }
 
 export interface PlayerChoice {
@@ -30,10 +44,14 @@ export interface PlayerChoice {
   shelterCrew: boolean;
 }
 
-interface TurnEnergy {
+export interface TurnEnergy {
   availableEnergy: number;
   requiredEnergy: number;
 }
+
+export type TurnForecast = TurnEnergy & {
+  status: 'within-budget' | 'over-budget';
+};
 
 export type TurnResult = TurnEnergy & (
   | { status: 'over-budget' }
