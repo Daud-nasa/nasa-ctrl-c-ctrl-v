@@ -2,85 +2,54 @@
 
 ## System Overview
 
-Lunar Shift has two independent parts:
+Lunar Shift is a mission trainer for students ages 10–14. The project is being rebuilt around a Java 21 / Spring Boot backend. The backend owns mission scenario data and deterministic turn calculations. The frontend is a separate client: it renders the mission, calls the backend API, and saves returned progress in browser storage. The backend currently keeps no player data and does not use a database.
 
-1. **Browser game:** a static TypeScript app built with Vite. The planned MVP bundles its mission scenario and NASA source snapshots, keeps the active mission state in browser memory, and can be hosted as static files. It must not require a server or live NASA API calls to play.
-2. **Backend scaffold:** a separate Java 21 / Spring Boot project in `backend/`. It currently exposes only Spring Boot Actuator health and is not called by the game or included in the Vite build/deployment. Add gameplay APIs or persistence only when a feature explicitly requires them.
-
-The current frontend engine and scenario data are present, but the player-facing mission screen and debrief still need to be connected. Telegram startup integration is in `src/main.ts`.
+The existing `src/` TypeScript engine and Vite setup are legacy frontend code. The Java API and scenario under `backend/` are the implementation target for the rebuilt game. Current deployment configuration still serves the existing static frontend; backend deployment is not configured.
 
 ## Repository Map
 
 ```text
-src/
-  main.ts                         Browser entry and Telegram WebApp startup
-  styles.css                      Global browser styles
-  game/
-    types.ts                      Mission, state, choice, forecast, and result types
-    engine.ts                     Pure forecast and turn resolution functions
-  data/
-    missions.ts                   Scenario validation and bundled event reference check
-    lunar-south-pole.json         Six-turn mission and game-balance values
-    nasa/
-      donki-sep-2024-05-11.json   Archived NASA DONKI event snapshot
+src/                                  Existing browser client and legacy TS engine
 docs/
-  architecture.md
-  sources.md
+  architecture.md                     This system overview
+  sources.md                          NASA references and game-balance notes
 backend/
-  build.gradle                    Spring Boot / Java toolchain and dependencies
-  settings.gradle
-  AGENTS.md                       Backend-specific Codex instructions
+  build.gradle                        Spring Boot, Java toolchain, dependencies
+  openapi.yaml                        Frontend-facing API contract and examples
+  README.md                           Local run instructions and frontend request flow
   src/main/java/org/lunarshift/backend/
-    LunarShiftBackendApplication.java
-    config/                       Spring configuration
-    controller/                   Future HTTP adapters
-    dto/                           Future API request/response types
-    exception/                     Future API error handling
-    repository/                    Future persistence adapters
-    service/                       Future server-side business logic
+    controller/                       Mission and NASA HTTP endpoints
+    dto/                              Scenario and API request/response types
+    exception/                        Consistent API errors
+    service/                          Mission catalog, game engine, NASA DONKI client
   src/main/resources/
-    application.properties        App name and Actuator health exposure
+    application.properties            API key and local CORS configuration
+    missions/lunar-south-pole-01.json  Bundled six-turn scenario
 ```
 
-The backend package folders are extension points; they do not imply that APIs, storage, authentication, or server-side game logic already exist. See `backend/AGENTS.md` for its commands and conventions. No Docker files or Docker deployment configuration are part of the project.
+## Frontend API Flow
 
-## Frontend Mission Contract
+The contract is defined in `backend/openapi.yaml`; the base URL locally is `http://localhost:8080/api/v1`.
 
-`src/game/types.ts` defines the shared contract:
+1. `GET /missions` returns available mission summaries.
+2. `GET /missions/{missionId}` returns scenario data, rules, source metadata, and the initial state.
+3. `POST /missions/{missionId}/forecast` accepts `{ state, choice }` and returns available energy, required energy, and `within-budget` or `over-budget`.
+4. `POST /missions/{missionId}/turns` accepts the same `{ state, choice }` and returns either `over-budget` without advancing or `resolved` with the next state, outcome, and reasons.
 
-- **Mission** includes initial state, turn sequence, battery capacity, solar and system energy values, harvest target, and scenario-authored rules.
-- **Mission state** tracks turn index, battery charge, food reserve, crop progress, harvested total, radiation score, and crew status.
-- **Player choice** says whether life support and the greenhouse are powered and whether the crew enters shelter.
-- **Forecast** reports available and required energy and whether the choice is within budget.
-- **Turn result** either rejects an over-budget choice or returns the next state, mission outcome, and explanation strings.
+The frontend saves the returned state in browser storage and includes it in later requests. The backend validates its shape and values but does not authenticate or persist it. A terminal `success` or `failure` outcome ends the current mission; replay starts from the scenario's `initialState`.
 
-The engine API is `forecastTurn(mission, state, choice)` and `resolveTurn(mission, state, choice)` from `src/game/engine.ts`. Forecasting is read-only; resolution uses the same energy calculation. Available energy is current solar generation plus battery charge. Loads subtract from available energy, and the remainder carries forward up to battery capacity. An over-budget choice does not advance the turn.
+## Game Engine
 
-`resolveTurn` currently applies food consumption, greenhouse growth and harvest, radiation exposure, crew radiation thresholds, and terminal success/failure checks. It does not yet model life-support failure consequences or make shelter consume the turn's greenhouse opportunity. Those design behaviors must be agreed and implemented in the engine before being presented as game rules in the UI. The engine should remain deterministic and independent of the DOM.
+Java engine behavior is deterministic and independent of HTTP and browser code. Forecast and resolution share the same energy calculation. Resolution applies food consumption, greenhouse growth and harvest, radiation exposure, crew thresholds, and mission outcome checks using values from the scenario. Current rules do not impose an additional consequence when life support is unpowered, and shelter does not consume the greenhouse opportunity; do not present those as modeled effects.
 
-Scenario-specific values belong in `src/data/lunar-south-pole.json`; do not add hidden balance defaults to the engine. `src/data/missions.ts` validates the scenario's string unions and checks that any radiation event reference resolves in the bundled event map.
+Scenario balancing values are authored game units. NASA observations provide mission context and selected event references; they are not direct measurements of lunar surface power, radiation dose, or food production.
 
-## NASA Inputs and Game Assumptions
+## NASA Data
 
-The six-turn sequence samples one fixed image coordinate from NASA SVS 4930 frames. The scenario records the frame URLs, frame numbers, timestamps, chosen point, threshold, and credits. The resulting sunlight/shadow labels are inputs derived for this game, not official NASA surface illumination classifications or a surveyed landing coordinate.
+`GET /api/v1/nasa/solar-particle-events` proxies the NASA DONKI SEP API through the backend. Configure `NASA_API_KEY` in the backend environment. The key must never be sent to the frontend. Return an explicit service error when a required live NASA request fails; do not silently substitute archived data.
 
-The SEP observation is bundled from NASA DONKI and referenced by activity ID. It supplies event metadata for the briefing. The story timing, radiation score, shelter effect, solar generation, battery behavior, system costs, crop timings, food values, and victory thresholds are game design values. In particular, DONKI's STEREO A observation is not a measurement of dose at the lunar surface. Keep these distinctions clear in UI copy and project materials; see `docs/sources.md` for references and current balance notes.
+NASA SVS illumination frames are not served by this DONKI endpoint. The bundled scenario records the selected SVS frame URLs, timestamps, and derived illumination labels. Preserve that provenance and credits; the pixel-based sunlight/shadow classification is a game input, not an official NASA surface classification. See `docs/sources.md` for sources and balance notes.
 
-## Backend Scaffold
+## Local Development
 
-The backend uses Gradle, Java 21, and Spring Boot 3.5.0. Its current dependencies are Spring Web and Actuator. The only exposed web management endpoint is `/actuator/health` on the default port `8080`; there is no mission API, database, authentication, or external service integration.
-
-Keep future backend features layered as controller → service → repository, with request/response DTOs separate from persistence models. Do not duplicate the TypeScript game engine in Java. The static game should continue to work independently unless a separately scoped product change introduces a defined API contract.
-
-## Delivery Milestones
-
-| Branch / stage | Status | Deliverable | Acceptance criteria |
-| --- | --- | --- | --- |
-| `main` | In place | Vite and TypeScript app scaffold, Telegram startup, and static deployment config | A fresh checkout installs dependencies and `npm run build` creates `dist/`. |
-| `feat/turn-engine` | In current feature branch | Deterministic forecast, turn resolution, and mission outcome | Cover shadow, shelter, harvest, over-budget input, and successful and failed routes. |
-| `feat/mission-data` | In current feature branch | Six-turn scenario based on NASA SVS frames and the archived DONKI event | Every illumination state references a frame; the event reference resolves; a winning route exists. Balance remains marked draft until values are approved. |
-| `feat/mission-screen` | Next | Shift briefing, resources and controls, forecast, consequences, debrief, and restart | A player can finish and replay on phone and desktop; NASA sources and game-balance values are clearly identified. |
-
-Before accepting the mission screen, decide and implement what happens when life support is not powered and whether shelter uses the shift's greenhouse opportunity. The engine does not model those consequences yet, so the UI must not imply they already apply. Select a frontend test runner before adding automated tests; then cover the acceptance scenarios in the table with deterministic tests.
-
-The backend remains a standalone scaffold until a future task defines a concrete server-side capability and its API, storage, security, and deployment requirements.
+Use Java 21 and Gradle 8.14 or later. From `backend/`, run `gradle bootRun` to start the API, `gradle test` to run deterministic tests, or `gradle build` to compile and test. Tests use bundled fixtures and do not call live NASA services. Set `FRONTEND_ALLOWED_ORIGINS` to a comma-separated list when the local frontend runs outside the default localhost port `3000`.

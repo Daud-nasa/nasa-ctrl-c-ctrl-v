@@ -1,0 +1,292 @@
+openapi: 3.1.0
+info:
+  title: Lunar Shift Backend API
+  version: 1.0.0
+  description: >-
+    Java API for bundled mission scenarios and deterministic turn calculations.
+    The browser owns save data and sends the current state with each game request.
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/v1/missions:
+    get:
+      summary: List available missions
+      operationId: listMissions
+      responses:
+        '200':
+          description: Mission summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MissionSummary'
+              example:
+                - id: lunar-south-pole-01
+                  title: 'Lunar Shift: South Pole Outpost'
+                  briefing: Keep the outpost powered through a six-shift illumination change.
+                  balanceStatus: draft
+                  turnCount: 6
+  /api/v1/missions/{missionId}:
+    parameters:
+      - $ref: '#/components/parameters/MissionId'
+    get:
+      summary: Get mission scenario and initial state
+      operationId: getMission
+      responses:
+        '200':
+          description: Scenario, rules, source metadata, and initial state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mission'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/missions/{missionId}/forecast:
+    parameters:
+      - $ref: '#/components/parameters/MissionId'
+    post:
+      summary: Preview the energy budget for a turn
+      operationId: forecastTurn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TurnRequest'
+            example:
+              state:
+                turnIndex: 0
+                batteryCharge: 12
+                foodReserve: 6
+                cropProgress: 0
+                harvestTotal: 0
+                radiationScore: 0
+                crewStatus: safe
+              choice:
+                powerLifeSupport: true
+                powerGreenhouse: true
+                shelterCrew: false
+      responses:
+        '200':
+          description: Forecast result; over-budget is a normal forecast status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Forecast'
+              example:
+                status: within-budget
+                availableEnergy: 20
+                requiredEnergy: 7
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/missions/{missionId}/turns:
+    parameters:
+      - $ref: '#/components/parameters/MissionId'
+    post:
+      summary: Resolve a turn and return the next state
+      operationId: resolveTurn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TurnRequest'
+      responses:
+        '200':
+          description: Turn result; over-budget does not advance the state
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ResolvedTurn'
+                  - $ref: '#/components/schemas/OverBudgetTurn'
+              examples:
+                resolved:
+                  value:
+                    status: resolved
+                    availableEnergy: 20
+                    requiredEnergy: 7
+                    state:
+                      turnIndex: 1
+                      batteryCharge: 13
+                      foodReserve: 5
+                      cropProgress: 1
+                      harvestTotal: 0
+                      radiationScore: 0
+                      crewStatus: safe
+                    outcome: in-progress
+                    reasons:
+                      - Food reserve decreased by 1.
+                      - Greenhouse added 1 crop progress.
+                over-budget:
+                  value:
+                    status: over-budget
+                    availableEnergy: 5
+                    requiredEnergy: 7
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/nasa/solar-particle-events:
+    get:
+      summary: Proxy NASA DONKI Solar Energetic Particle events
+      operationId: getSolarParticleEvents
+      description: >-
+        Calls NASA's DONKI SEP endpoint from the backend. Configure NASA_API_KEY
+        in the backend environment. NASA failures are returned as 503; archived
+        mission snapshots are not silently substituted.
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          example: '2024-05-11'
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          example: '2024-05-11'
+      responses:
+        '200':
+          description: NASA DONKI JSON response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '503':
+          description: NASA API key is missing or NASA returned an error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+components:
+  parameters:
+    MissionId:
+      name: missionId
+      in: path
+      required: true
+      schema:
+        type: string
+      example: lunar-south-pole-01
+  responses:
+    BadRequest:
+      description: Invalid body, state, choice, or date range
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    NotFound:
+      description: Unknown mission ID
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+  schemas:
+    MissionSummary:
+      type: object
+      required: [id, title, briefing, balanceStatus, turnCount]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        briefing: { type: string }
+        balanceStatus: { type: string }
+        turnCount: { type: integer }
+    Mission:
+      type: object
+      required: [id, title, briefing, initialState, turns, batteryCapacity, sunlightPower, lifeSupportCost, greenhouseCost, harvestTarget, rules]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        briefing: { type: string }
+        balanceStatus: { type: string }
+        initialState: { $ref: '#/components/schemas/MissionState' }
+        turns:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        batteryCapacity: { type: integer }
+        sunlightPower: { type: integer }
+        lifeSupportCost: { type: integer }
+        greenhouseCost: { type: integer }
+        harvestTarget: { type: integer }
+        rules:
+          type: object
+          additionalProperties: { type: integer }
+        illuminationSource:
+          type: object
+          additionalProperties: true
+        radiationEvents:
+          type: object
+          additionalProperties: true
+        balanceNotes:
+          type: array
+          items: { type: string }
+    MissionState:
+      type: object
+      required: [turnIndex, batteryCharge, foodReserve, cropProgress, harvestTotal, radiationScore, crewStatus]
+      properties:
+        turnIndex: { type: integer, minimum: 0 }
+        batteryCharge: { type: integer, minimum: 0 }
+        foodReserve: { type: integer, minimum: 0 }
+        cropProgress: { type: integer, minimum: 0 }
+        harvestTotal: { type: integer, minimum: 0 }
+        radiationScore: { type: integer, minimum: 0 }
+        crewStatus: { type: string, enum: [safe, at-risk, critical] }
+    PlayerChoice:
+      type: object
+      required: [powerLifeSupport, powerGreenhouse, shelterCrew]
+      properties:
+        powerLifeSupport: { type: boolean }
+        powerGreenhouse: { type: boolean }
+        shelterCrew: { type: boolean }
+    TurnRequest:
+      type: object
+      required: [state, choice]
+      properties:
+        state: { $ref: '#/components/schemas/MissionState' }
+        choice: { $ref: '#/components/schemas/PlayerChoice' }
+    Forecast:
+      type: object
+      required: [status, availableEnergy, requiredEnergy]
+      properties:
+        status: { type: string, enum: [within-budget, over-budget] }
+        availableEnergy: { type: integer }
+        requiredEnergy: { type: integer }
+    ResolvedTurn:
+      type: object
+      required: [status, availableEnergy, requiredEnergy, state, outcome, reasons]
+      properties:
+        status: { const: resolved }
+        availableEnergy: { type: integer }
+        requiredEnergy: { type: integer }
+        state: { $ref: '#/components/schemas/MissionState' }
+        outcome: { type: string, enum: [in-progress, success, failure] }
+        reasons:
+          type: array
+          items: { type: string }
+    OverBudgetTurn:
+      type: object
+      required: [status, availableEnergy, requiredEnergy]
+      properties:
+        status: { const: over-budget }
+        availableEnergy: { type: integer }
+        requiredEnergy: { type: integer }
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
