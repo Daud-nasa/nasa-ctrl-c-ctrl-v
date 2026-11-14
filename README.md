@@ -29,6 +29,15 @@ Open the local URL printed by Vite. `npm run build` checks TypeScript and create
 
 The starter page and shared game types are ready. The first playable build begins with the simulation, mission data, and interface described in the architecture.
 
+## Deploy to Render and open in Telegram
+
+1. In the [Render Dashboard](https://dashboard.render.com/), choose **New → Blueprint**, connect `Daud-nasa/nasa-ctrl-c-ctrl-v` on `main`, and apply [`render.yaml`](render.yaml). It creates a free Static Site. Render builds with `npm ci --include=dev && npm run build`, publishes `dist`, and redeploys on pushes to `main`.
+2. Open the HTTPS `onrender.com` URL from the completed deploy and check that the page loads.
+3. In [@BotFather](https://t.me/BotFather), create a bot with `/newbot` or select an existing bot. Run `/setmenubutton`, choose the bot, enter the Render HTTPS URL, and name the button `Play Lunar Shift`.
+4. Open the bot on your phone and tap the menu button. To add a direct `https://t.me/<bot_username>?startapp` link, enable **Main Mini App** in the bot's settings in BotFather and set the same URL.
+
+The hosted page also opens in a regular browser. The Mini App uses the Telegram client SDK to signal readiness and expand the game view. The app runs with bundled mission data and needs no bot token or backend service.
+
 ## Team workflow
 
 Keep `main` playable once the first build lands. Take one task per branch and open a PR into `main`. Review the change before merging when another teammate is available.

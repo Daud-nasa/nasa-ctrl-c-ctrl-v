@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: lunar-shift
+    runtime: static
+    branch: main
+    buildCommand: npm ci --include=dev && npm run build
+    staticPublishPath: ./dist
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: 24.22.1
