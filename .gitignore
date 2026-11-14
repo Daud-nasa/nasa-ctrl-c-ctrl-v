@@ -3,8 +3,11 @@
 node_modules/
 dist/
 coverage/
-backend/.gradle/
-backend/build/
+
+# Gradle caches and generated build output (all projects)
+**/.gradle/
+**/build/
+
 .env
 .env.*
 !.env.example

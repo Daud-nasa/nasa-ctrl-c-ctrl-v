@@ -14,20 +14,19 @@ Lunar Shift is a short browser-based mission trainer for students. Players run a
 
 - [Architecture and first pull requests](docs/architecture.md)
 - [NASA sources and game assumptions](docs/sources.md)
-- [Archived NASA DONKI event selected for the mission](src/data/nasa/donki-sep-2024-05-11.json)
+- [Architecture and backend API contract](docs/architecture.md)
 
 ## Run locally
-
-The frontend is being replaced. The commands below apply once the new frontend entry point is committed.
 
 Use Node.js 22.12 or later on the 22.x line, or Node.js 24 or later.
 
 ```sh
+cd frontend
 npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite. `npm run build` checks TypeScript and creates the static site in `dist/`. Run `npm run preview` after a build to check the production output locally.
+Open the local URL printed by Vite. `npm run build` checks TypeScript and creates the static site in `frontend/dist/`. Run `npm run preview` after a build to check the production output locally.
 
 The shared game types and archived NASA data are available for the new frontend.
 

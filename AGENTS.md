@@ -8,10 +8,10 @@ The Java 21 / Spring Boot backend in `backend/` provides the mission and turn AP
 
 ## Project Structure
 
-- `src/main.ts` is the browser entry point; `src/styles.css` contains global styles.
-- `src/game/` and `src/data/` contain the existing TypeScript engine and scenario; the backend's Java engine and bundled scenario are authoritative for the rebuilt API.
+- `frontend/src/main.tsx` is the browser entry point; `frontend/src/app/styles/` contains global styles.
+- `frontend/` contains the React client; the backend's Java engine and bundled scenario are authoritative for game rules.
 - `backend/src/main/java/org/lunarshift/backend/` contains the Java API, scenario catalog, and deterministic game engine. `backend/src/main/resources/missions/` contains the server scenario; `backend/Dockerfile` builds the Render service.
-- `backend/openapi.yaml` defines the frontend contract; `backend/README.md` shows the local request flow. `src/data/nasa/` contains an archived NASA source snapshot.
+- `backend/openapi.yaml` defines the frontend contract; `backend/README.md` shows the local request flow.
 - `docs/architecture.md` describes the game architecture and work sequence. `docs/sources.md` records NASA references, data derivation, credits, and game-balance assumptions.
 - `backend/` is the Java 21 / Spring Boot API project. Its local instructions are in `backend/AGENTS.md`.
 - `render.yaml` configures the static frontend and backend deployments. The backend uses its own Dockerfile; there is no Docker Compose setup.
@@ -30,9 +30,9 @@ Keep source evidence distinct from game design values. NASA materials inform the
 
 Use Node.js 22.12+ on the 22.x line or Node.js 24+.
 
-From the repository root:
+From `frontend/`:
 
-- `npm ci` installs the locked frontend dependencies.
+- `npm ci` installs the frontend dependencies.
 - `npm run dev` starts the Vite development server.
 - `npm run typecheck` runs TypeScript without emitting files.
 - `npm run build` type-checks and builds the static site into `dist/`.

@@ -3,8 +3,8 @@ services:
     name: lunar-shift
     runtime: static
     branch: main
-    buildCommand: npm ci --include=dev && npm run build
-    staticPublishPath: ./dist
+    buildCommand: cd frontend && npm ci --include=dev && npm run build
+    staticPublishPath: ./frontend/dist
     autoDeployTrigger: commit
     envVars:
       - key: NODE_VERSION
