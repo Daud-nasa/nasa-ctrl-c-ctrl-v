@@ -2,6 +2,7 @@
 
 | Source | Intended use |
 | --- | --- |
+| [NASA Open APIs](https://api.nasa.gov/) · [DONKI SEP endpoint](https://api.nasa.gov/DONKI/SEP) | The Java backend proxies live Solar Energetic Particle event data through `/api/v1/nasa/solar-particle-events`. Requests require a backend `NASA_API_KEY`; do not expose the key to the frontend. |
 | [NASA CCMC DONKI](https://ccmc.gsfc.nasa.gov/tools/DONKI/) · [Archived SEP record](https://kauai.ccmc.gsfc.nasa.gov/DONKI/view/SEP/30717/1) | Trigger the shelter decision using an archived solar energetic particle event. The [local snapshot](../src/data/nasa/donki-sep-2024-05-11.json) records the activity ID, observation time, and observing instrument. |
 | [NASA SVS lunar south pole illumination](https://svs.gsfc.nasa.gov/4930/) | Derive each turn's sunlight or shadow from a fixed point in the selected frame sequence. |
 | [NASA ECLSS](https://www.nasa.gov/reference/environmental-control-and-life-support-systems-eclss/) | Explain how life support maintains air and water for the crew. |

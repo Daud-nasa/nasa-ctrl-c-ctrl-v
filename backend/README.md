@@ -1,0 +1,58 @@
+# Lunar Shift Backend
+
+Spring Boot API for mission scenarios, turn forecasts, turn resolution, and NASA DONKI SEP data. The backend owns the game rules. It does not store player progress; the frontend should save the returned state in browser storage and send it with each forecast or turn request.
+
+## Run locally
+
+Use Java 21 and Gradle 8.14 or later:
+
+```sh
+gradle bootRun
+```
+
+Base URL: `http://localhost:8080/api/v1`. The full endpoint contract and example payloads are in [`openapi.yaml`](openapi.yaml).
+
+Quick smoke request for the frontend:
+
+```sh
+curl http://localhost:8080/api/v1/missions/lunar-south-pole-01
+```
+
+This endpoint and the forecast/turn endpoints below are available as soon as the backend starts; core gameplay does not require the NASA API key.
+
+## Frontend game flow
+
+1. Call `GET /missions` and use the returned `id` to choose a mission.
+2. Call `GET /missions/{missionId}`. Render the returned scenario and save its `initialState` in browser storage.
+3. For a proposed player choice, call `POST /missions/{missionId}/forecast` with the current state and choice. A forecast with `status: "over-budget"` should disable or explain that choice.
+4. Call `POST /missions/{missionId}/turns` with the same state and choice to resolve the turn. On `status: "resolved"`, replace the saved state with the returned state. On `status: "over-budget"`, keep the previous state unchanged.
+5. Stop accepting choices when `outcome` is `success` or `failure`; offer replay using the scenario's `initialState`.
+
+To show live space-weather context for a radiation event, call `GET /nasa/solar-particle-events` with the event's UTC date as both `startDate` and `endDate`. This NASA data is briefing context; the scenario's explicit event reference continues to drive the authored turn rules.
+
+Example request:
+
+```json
+{
+  "state": {
+    "turnIndex": 0,
+    "batteryCharge": 12,
+    "foodReserve": 6,
+    "cropProgress": 0,
+    "harvestTotal": 0,
+    "radiationScore": 0,
+    "crewStatus": "safe"
+  },
+  "choice": {
+    "powerLifeSupport": true,
+    "powerGreenhouse": true,
+    "shelterCrew": false
+  }
+}
+```
+
+Send the example to `POST http://localhost:8080/api/v1/missions/lunar-south-pole-01/forecast` to preview a choice, then to `/turns` to resolve it. Both requests take the same JSON body shown above.
+
+## NASA data and local configuration
+
+`GET /api/v1/nasa/solar-particle-events?startDate=2024-05-11&endDate=2024-05-11` proxies NASA DONKI SEP data. Set `NASA_API_KEY` in the backend environment. The API key is never sent to the browser. The default CORS allowlist is ports 3000 on localhost; override it with comma-separated `FRONTEND_ALLOWED_ORIGINS` values when needed. NASA service errors return `503` and are not replaced by the archived scenario snapshot.

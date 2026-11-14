@@ -1,48 +1,31 @@
 # Backend Guidelines
 
-## Purpose and Boundaries
+## Purpose and Structure
 
-This directory is a standalone Java 21 / Spring Boot scaffold for possible future server-side features in Lunar Shift. The current game is a static Vite application with bundled mission data. It does not call this backend, and the backend does not currently provide mission, gameplay, or persistence APIs.
+The Java 21 / Spring Boot backend owns mission scenarios, gameplay calculations, and the frontend-facing API. Keep controllers focused on HTTP mapping, game rules in services, request/response models in `dto/`, and NASA integrations behind a service/client layer. The frontend owns presentation and browser-side progress storage; do not add server-side saves, authentication, or a database unless requested.
 
-Keep future server work separate from the browser engine. Do not reimplement game rules in Java or make the frontend depend on this service unless a task explicitly defines that product change. Do not add Docker or deployment configuration without an explicit requirement.
+`src/main/resources/missions/` contains bundled scenarios. `openapi.yaml` is the frontend API contract and `README.md` documents local integration. Preserve NASA source URLs and credits. NASA values are evidence and context; game-balance values remain scenario-authored.
 
-## Structure
+## API Behavior
 
-The Gradle project uses package root `org.lunarshift.backend` and a layered layout:
+- `GET /api/v1/missions` lists scenarios; `GET /api/v1/missions/{id}` returns the scenario and initial state.
+- `POST /api/v1/missions/{id}/forecast` previews energy; `POST /api/v1/missions/{id}/turns` resolves a turn. Both accept the current state and choice from the frontend.
+- Forecast and resolution must use the same energy calculation. An over-budget turn must not advance state.
+- `GET /api/v1/nasa/solar-particle-events?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD` proxies NASA DONKI SEP data. NASA calls stay in the backend; do not expose the API key to the browser.
 
-```text
-backend/
-  build.gradle                 Dependencies and Java toolchain
-  settings.gradle              Gradle project name
-  src/main/java/org/lunarshift/backend/
-    LunarShiftBackendApplication.java
-    config/                    Spring configuration
-    controller/                HTTP adapters
-    dto/                       Request and response models
-    exception/                 API error handling
-    repository/                Persistence adapters, when persistence is approved
-    service/                   Backend business logic
-  src/main/resources/
-    application.properties    Local defaults and actuator health exposure
-```
+## Build, Run, and Verify
 
-Only add concrete layer classes when a feature needs them. Keep controllers focused on HTTP mapping, put business logic in services, and isolate persistence behind repositories. Avoid adding a database, authentication, or external integrations speculatively.
+Use Java 21 and Gradle 8.14 or later. There is no Gradle wrapper. From `backend/`:
 
-## Build and Run
+- `gradle bootRun` starts the API on port `8080`.
+- `gradle test` runs deterministic engine and MockMvc API tests.
+- `gradle build` compiles, tests, and packages the service.
 
-Use Java 21 and Gradle 8.14 or later. No Gradle wrapper is included in the scaffold.
+Set `NASA_API_KEY` in the environment to use the NASA proxy endpoint. Configure browser development origins with `FRONTEND_ALLOWED_ORIGINS`; the default allows localhost port `3000`.
 
-- `gradle bootRun` runs the local service from `backend/`.
-- `gradle build` compiles and packages the service.
-- The Spring Boot Actuator health endpoint is `/actuator/health` on the default port `8080`.
+## Conventions and NASA Data
 
-## Conventions and Configuration
-
-- Use Java 21, Spring Boot, four-space Java indentation, descriptive `PascalCase` types, and `camelCase` methods/fields.
-- Keep configuration in `src/main/resources/application.properties`; inject secrets through environment variables if a future feature requires them.
-- Keep response/request models in `dto/`; do not expose persistence entities directly from controllers.
-- Add only dependencies that support an explicitly requested capability. Keep the backend independently buildable and do not couple its build to the root npm scripts.
-
-## Verification
-
-Run `gradle build` from this directory when backend verification is requested and Gradle is available. Add tests only when a task requests them or establishes a test framework; keep them local and deterministic, without live NASA API calls.
+- Use four-space Java indentation, `PascalCase` types, and `camelCase` methods and fields.
+- Keep external HTTP requests out of controllers. Handle timeouts, HTTP errors, and NASA rate limits explicitly; required live NASA responses must not silently fall back to archived snapshots.
+- Use `https://api.nasa.gov` for supported data products such as DONKI SEP. For datasets not served by NASA Open APIs, use their authoritative NASA source.
+- Keep keys out of source control and logs. Tests must use fixtures or mocked HTTP responses, never depend on live NASA availability.
