@@ -18,25 +18,27 @@ Lunar Shift is a short browser-based mission trainer for students. Players run a
 
 ## Run locally
 
-The frontend is being replaced. The commands below apply once the new frontend entry point is committed.
+The active frontend is in `frontend/`.
 
 Use Node.js 22.12 or later on the 22.x line, or Node.js 24 or later.
 
 ```sh
+cd frontend
 npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite. `npm run build` checks TypeScript and creates the static site in `dist/`. Run `npm run preview` after a build to check the production output locally.
+Open the local URL printed by Vite. `npm run build` checks TypeScript and creates the static site in `frontend/dist/`. Run `npm run preview` after a build to check the production output locally.
 
 The shared game types and archived NASA data are available for the new frontend.
 
 ## Deploy to Render and open in Telegram
 
-1. In the [Render Dashboard](https://dashboard.render.com/), choose **New → Blueprint**, connect `Daud-nasa/nasa-ctrl-c-ctrl-v` on `main`, and apply [`render.yaml`](render.yaml). It creates a free Static Site. Render builds with `npm ci --include=dev && npm run build`, publishes `dist`, and redeploys on pushes to `main`.
-2. Open the HTTPS `onrender.com` URL from the completed deploy and check that the page loads.
-3. In [@BotFather](https://t.me/BotFather), create a bot with `/newbot` or select an existing bot. Run `/setmenubutton`, choose the bot, enter the Render HTTPS URL, and name the button `Play Lunar Shift`.
-4. Open the bot on your phone and tap the menu button. To add a direct `https://t.me/<bot_username>?startapp` link, enable **Main Mini App** in the bot's settings in BotFather and set the same URL.
+1. In the [Render Dashboard](https://dashboard.render.com/), choose **New → Blueprint**, connect `Daud-nasa/nasa-ctrl-c-ctrl-v` on `main`, and apply [`render.yaml`](render.yaml). It creates a free Static Site rooted at `frontend/` and a Docker Web Service for the Java backend. The static build runs `npm ci --include=dev && npm run build` inside `frontend/` and publishes `dist/`; both services redeploy on pushes to `main`.
+2. When syncing the Blueprint, set `NASA_API_KEY` and `FRONTEND_ALLOWED_ORIGINS` for the backend service in Render.
+3. Open the frontend HTTPS `onrender.com` URL from the completed deploy and check that the page loads.
+4. In [@BotFather](https://t.me/BotFather), create a bot with `/newbot` or select an existing bot. Run `/setmenubutton`, choose the bot, enter the Render HTTPS URL, and name the button `Play Lunar Shift`.
+5. Open the bot on your phone and tap the menu button. To add a direct `https://t.me/<bot_username>?startapp` link, enable **Main Mini App** in the bot's settings in BotFather and set the same URL.
 
 The new frontend should initialize the Telegram client SDK and run in a regular browser as well as in Telegram. The mission uses bundled data and needs no bot token or backend service.
 
