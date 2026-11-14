@@ -1,3 +1,8 @@
+/**
+ * Public UI integration contract. The separate frontend passes the loaded
+ * mission, current state, and player choice to these pure engine functions.
+ * Call forecastTurn for the preview and resolveTurn to apply the same choice.
+ */
 import type {
   Mission,
   MissionState,
