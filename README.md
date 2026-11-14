@@ -16,7 +16,18 @@ Lunar Shift is a short browser-based mission trainer for students. Players run a
 - [NASA sources and game assumptions](docs/sources.md)
 - [Archived NASA DONKI event selected for the mission](src/data/nasa/donki-sep-2024-05-11.json)
 
-The repository currently contains the project plan. The playable build begins with the simulation and mission data described in the architecture.
+## Run locally
+
+Use Node.js 22.12 or later on the 22.x line, or Node.js 24 or later.
+
+```sh
+npm ci
+npm run dev
+```
+
+Open the local URL printed by Vite. `npm run build` checks TypeScript and creates the static site in `dist/`. Run `npm run preview` after a build to check the production output locally.
+
+The starter page and shared game types are ready. The first playable build begins with the simulation, mission data, and interface described in the architecture.
 
 ## Team workflow
 
