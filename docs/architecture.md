@@ -4,7 +4,7 @@
 
 Lunar Shift is a mission trainer for students ages 10–14. The project is being rebuilt around a Java 21 / Spring Boot backend. The backend owns mission scenario data and deterministic turn calculations. The frontend is a separate client: it renders the mission, calls the backend API, and saves returned progress in browser storage. The backend currently keeps no player data and does not use a database.
 
-The existing `src/` TypeScript engine and Vite setup are legacy frontend code. The Java API and scenario under `backend/` are the implementation target for the rebuilt game. Current deployment configuration still serves the existing static frontend; backend deployment is not configured.
+The existing `src/` TypeScript engine and Vite setup are legacy frontend code. The Java API and scenario under `backend/` are the implementation target for the rebuilt game. The root Render Blueprint retains the static frontend service and defines a Docker-based backend Web Service; it requires the NASA API key and frontend origin to be supplied in Render. Spring Boot binds to Render's `PORT` environment variable and uses `8080` locally.
 
 ## Repository Map
 
@@ -15,6 +15,7 @@ docs/
   sources.md                          NASA references and game-balance notes
 backend/
   build.gradle                        Spring Boot, Java toolchain, dependencies
+  Dockerfile                          Multi-stage Java 21 image; runs tests before packaging
   openapi.yaml                        Frontend-facing API contract and examples
   README.md                           Local run instructions and frontend request flow
   src/main/java/org/lunarshift/backend/
@@ -52,4 +53,4 @@ NASA SVS illumination frames are not served by this DONKI endpoint. The bundled 
 
 ## Local Development
 
-Use Java 21 and Gradle 8.14 or later. From `backend/`, run `gradle bootRun` to start the API, `gradle test` to run deterministic tests, or `gradle build` to compile and test. Tests use bundled fixtures and do not call live NASA services. Set `FRONTEND_ALLOWED_ORIGINS` to a comma-separated list when the local frontend runs outside the default localhost port `3000`.
+Use Java 21. From `backend/`, run `./gradlew bootRun` to start the API, `./gradlew test` to run deterministic tests, or `./gradlew build` to compile and test. The checked-in wrapper pins Gradle 8.14.7. Tests use bundled fixtures and mocked NASA responses; they do not call live NASA services. Set `FRONTEND_ALLOWED_ORIGINS` to a comma-separated list when the local frontend runs outside the default localhost port `3000`.

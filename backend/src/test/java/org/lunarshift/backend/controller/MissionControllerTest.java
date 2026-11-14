@@ -4,7 +4,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.lunarshift.backend.dto.MissionApiModels.ForecastResponse;
+import org.lunarshift.backend.dto.MissionApiModels.TurnResolutionResponse;
+import org.lunarshift.backend.dto.MissionScenario;
+import org.lunarshift.backend.dto.PlayerChoice;
+import org.lunarshift.backend.dto.TurnRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -18,6 +25,9 @@ import org.springframework.test.web.servlet.MockMvc;
 class MissionControllerTest {
   @Autowired
   private MockMvc mockMvc;
+
+  @Autowired
+  private ObjectMapper objectMapper;
 
   @Test
   void listsAndLoadsBundledMission() throws Exception {
@@ -68,6 +78,52 @@ class MissionControllerTest {
         .andExpect(jsonPath("$.status").value("resolved"))
         .andExpect(jsonPath("$.state.turnIndex").value(1))
         .andExpect(jsonPath("$.outcome").value("in-progress"));
+  }
+
+  @Test
+  void bundledSixTurnScenarioHasAWinningRouteThroughTheApi() throws Exception {
+    String missionJson = mockMvc.perform(get("/api/v1/missions/lunar-south-pole-01"))
+        .andExpect(status().isOk())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+    MissionScenario mission = objectMapper.readValue(missionJson, MissionScenario.class);
+    MissionScenario.MissionState state = mission.initialState();
+    String outcome = "in-progress";
+
+    for (int turnIndex = 0; turnIndex < mission.turns().size(); turnIndex++) {
+      PlayerChoice choice = new PlayerChoice(true, turnIndex < 3, turnIndex == 2);
+      String requestBody = objectMapper.writeValueAsString(new TurnRequest(state, choice));
+
+      ForecastResponse forecast = objectMapper.readValue(
+          mockMvc.perform(post("/api/v1/missions/" + mission.id() + "/forecast")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(requestBody))
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString(),
+          ForecastResponse.class);
+      assertEquals("within-budget", forecast.status(), "forecast for turn " + turnIndex);
+
+      TurnResolutionResponse resolution = objectMapper.readValue(
+          mockMvc.perform(post("/api/v1/missions/" + mission.id() + "/turns")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(requestBody))
+              .andExpect(status().isOk())
+              .andReturn()
+              .getResponse()
+              .getContentAsString(),
+          TurnResolutionResponse.class);
+      assertEquals("resolved", resolution.status(), "resolution for turn " + turnIndex);
+      state = resolution.state();
+      outcome = resolution.outcome();
+    }
+
+    assertEquals("success", outcome);
+    assertEquals(mission.harvestTarget(), state.harvestTotal());
+    assertEquals(MissionScenario.CrewStatus.SAFE, state.crewStatus());
+    assertEquals(1, state.foodReserve());
   }
 
   @Test
