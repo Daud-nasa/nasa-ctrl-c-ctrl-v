@@ -57,7 +57,7 @@ Send the example to `POST http://localhost:8080/api/v1/missions/lunar-south-pole
 
 ## NASA data and local configuration
 
-`GET /api/v1/nasa/solar-particle-events?startDate=2024-05-11&endDate=2024-05-11` proxies NASA DONKI SEP data as a stable DTO with `id`, `eventTime`, `instruments`, `sourceUrl`, and `relatedEventIds`. Set `NASA_API_KEY` in the backend environment. The API key is never sent to the browser. The default CORS allowlist is ports 3000 on localhost; override it with comma-separated `FRONTEND_ALLOWED_ORIGINS` values when needed. NASA service errors return `503` and are not replaced by the archived scenario snapshot.
+`GET /api/v1/nasa/solar-particle-events?startDate=2024-05-11&endDate=2024-05-11` proxies NASA DONKI SEP data as a stable DTO with `id`, `eventTime`, `instruments`, `sourceUrl`, and `relatedEventIds`. Set `NASA_API_KEY` in the backend environment. The API key is never sent to the browser. The default CORS allowlist includes `localhost` and `127.0.0.1` on ports 3000, 5173, and 5174; override it with comma-separated `FRONTEND_ALLOWED_ORIGINS` values when needed. NASA service errors return `503` and are not replaced by the archived scenario snapshot.
 
 ## Render deployment
 
