@@ -72,11 +72,15 @@ The backend uses Gradle, Java 21, and Spring Boot 3.5.0. Its current dependencie
 
 Keep future backend features layered as controller → service → repository, with request/response DTOs separate from persistence models. Do not duplicate the TypeScript game engine in Java. The static game should continue to work independently unless a separately scoped product change introduces a defined API contract.
 
-## Next Implementation Steps
+## Delivery Milestones
 
-1. Build the mission screen around the existing scenario and engine: show the shift briefing and resources, collect a player choice, display the forecast, and resolve valid choices.
-2. Add the debrief and restart flow; explain outcome and consequences using the engine's reasons. Keep the same mission scenario for replay.
-3. Before UI acceptance, decide and implement the intended life-support failure and shelter-time rules, then verify a successful and a failed route plus sunlight/shadow, shelter, harvest, and over-budget cases.
-4. Select a frontend test runner before adding automated engine tests. Verify the game on phone and desktop and keep NASA source links and balance labels visible where needed.
+| Branch / stage | Status | Deliverable | Acceptance criteria |
+| --- | --- | --- | --- |
+| `main` | In place | Vite and TypeScript app scaffold, Telegram startup, and static deployment config | A fresh checkout installs dependencies and `npm run build` creates `dist/`. |
+| `feat/turn-engine` | In current feature branch | Deterministic forecast, turn resolution, and mission outcome | Cover shadow, shelter, harvest, over-budget input, and successful and failed routes. |
+| `feat/mission-data` | In current feature branch | Six-turn scenario based on NASA SVS frames and the archived DONKI event | Every illumination state references a frame; the event reference resolves; a winning route exists. Balance remains marked draft until values are approved. |
+| `feat/mission-screen` | Next | Shift briefing, resources and controls, forecast, consequences, debrief, and restart | A player can finish and replay on phone and desktop; NASA sources and game-balance values are clearly identified. |
+
+Before accepting the mission screen, decide and implement what happens when life support is not powered and whether shelter uses the shift's greenhouse opportunity. The engine does not model those consequences yet, so the UI must not imply they already apply. Select a frontend test runner before adding automated tests; then cover the acceptance scenarios in the table with deterministic tests.
 
 The backend remains a standalone scaffold until a future task defines a concrete server-side capability and its API, storage, security, and deployment requirements.
