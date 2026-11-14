@@ -18,6 +18,8 @@ Lunar Shift is a short browser-based mission trainer for students. Players run a
 
 ## Run locally
 
+The frontend is being replaced. The commands below apply once the new frontend entry point is committed.
+
 Use Node.js 22.12 or later on the 22.x line, or Node.js 24 or later.
 
 ```sh
@@ -27,7 +29,7 @@ npm run dev
 
 Open the local URL printed by Vite. `npm run build` checks TypeScript and creates the static site in `dist/`. Run `npm run preview` after a build to check the production output locally.
 
-The starter page and shared game types are ready. The first playable build begins with the simulation, mission data, and interface described in the architecture.
+The shared game types and archived NASA data are available for the new frontend.
 
 ## Deploy to Render and open in Telegram
 
@@ -36,7 +38,18 @@ The starter page and shared game types are ready. The first playable build begin
 3. In [@BotFather](https://t.me/BotFather), create a bot with `/newbot` or select an existing bot. Run `/setmenubutton`, choose the bot, enter the Render HTTPS URL, and name the button `Play Lunar Shift`.
 4. Open the bot on your phone and tap the menu button. To add a direct `https://t.me/<bot_username>?startapp` link, enable **Main Mini App** in the bot's settings in BotFather and set the same URL.
 
-The hosted page also opens in a regular browser. The Mini App uses the Telegram client SDK to signal readiness and expand the game view. The app runs with bundled mission data and needs no bot token or backend service.
+The new frontend should initialize the Telegram client SDK and run in a regular browser as well as in Telegram. The mission uses bundled data and needs no bot token or backend service.
+
+## Enable Telegram chat replies
+
+The bot replies to `/start` and `/help` in private chats. Both replies include a button that opens the existing Render Static Site as a Mini App.
+
+1. In Render, create a separate **Web Service** using this repository and `main`. Select **Node** and the **Free** instance. Leave Root Directory blank. Use `node --check bot/server.mjs` for Build Command and `node bot/server.mjs` for Start Command. Set the Health Check Path to `/health`.
+2. Set `NODE_VERSION` to `24.22.1` and add `TELEGRAM_WEBHOOK_SECRET`. Use Render's **Generate** button for the secret, or generate one with `openssl rand -hex 32`. Wait for the service to go live.
+3. From the repository root, run `python3 bot/register-webhook.py`. Enter the **bot service** HTTPS URL, the BotFather token, and the same webhook secret. The script registers the webhook with Telegram. The token is entered in your terminal and used only for the Telegram API request.
+4. Open a private chat with your bot and send `/start`, then `/help`. Check that **Play Lunar Shift** opens the Mini App. To list the commands in Telegram, use `/setcommands` in BotFather with `start - Open the mission trainer` and `help - Read the mission briefing` on separate lines.
+
+The free bot service can take up to about a minute to wake after inactivity. The Static Site continues serving the Mini App URL.
 
 ## Team workflow
 
