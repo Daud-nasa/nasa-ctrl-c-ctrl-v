@@ -1,6 +1,8 @@
 export interface MissionTurn {
   illumination: 'sunlight' | 'shadow';
   illuminationSourceUrl: string;
+  illuminationFrameNumber?: number;
+  illuminationAtUtc?: string;
   radiationEventId?: string;
 }
 
@@ -23,6 +25,44 @@ export interface Mission {
   greenhouseCost: number;
   harvestTarget: number;
   rules: MissionRules;
+}
+
+export interface MissionScenarioTurn extends MissionTurn {
+  illuminationFrameNumber: number;
+  illuminationAtUtc: string;
+}
+
+export interface MissionRadiationEvent {
+  activityId: string;
+  eventType: 'SEP';
+  observedAtUtc: string;
+  observatory: string;
+  instrument: string;
+  sourceUrl: string;
+}
+
+export interface MissionScenario extends Mission {
+  id: string;
+  title: string;
+  briefing: string;
+  balanceStatus: 'draft' | 'approved';
+  turns: MissionScenarioTurn[];
+  illuminationSource: {
+    sourceUrl: string;
+    visualizationYear: number;
+    fieldOfView: string;
+    selectedPoint: {
+      description: string;
+      frameWidth: number;
+      frameHeight: number;
+      x: number;
+      y: number;
+      litPixelThreshold: number;
+    };
+    credits: string[];
+  };
+  radiationEvents: Record<string, MissionRadiationEvent>;
+  balanceNotes: string[];
 }
 
 /** Scenario-authored values for consequences that need game balancing. */
