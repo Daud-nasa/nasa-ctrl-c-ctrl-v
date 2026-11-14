@@ -13,6 +13,8 @@ src/
     engine.ts              Forecast and resolve a turn
   data/
     lunar-south-pole.json  Six turns, initial values and victory conditions
+    nasa/
+      donki-sep-2024-05-11.json  Archived NASA event metadata
   ui/
     mission-screen.ts      Briefing, current resources and player controls
     debrief.ts             Outcome, consequences and restart
@@ -26,7 +28,7 @@ docs/
 
 ## Turn contract
 
-- **Mission** stores initial values, battery capacity, system costs, victory conditions, and each turn's illumination and radiation alert.
+- **Mission** stores initial values, battery capacity, system costs, victory conditions, and each turn's illumination. The storm turn references the bundled DONKI event by activity ID. Resolve the reference when loading the scenario and report an authoring error if the event is missing.
 - **Mission state** stores the turn index, battery charge, food reserve, crop progress, accumulated radiation, and crew status.
 - **Player choice** records whether life support and greenhouse are powered and whether the crew enters shelter.
 - **Turn result** contains the new state and the reasons behind resource changes or the mission outcome.
@@ -35,13 +37,15 @@ The UI reads the turn briefing, collects a choice, and asks the engine for a for
 
 The mission succeeds after six turns when the crew meets the scenario's safety conditions and reaches the harvest target. Include both a winning route and a losing route in the first engine verification. The solar output, timings for crop growth, and radiation scores use game units.
 
+Bundle the archived event and the chosen illumination values with the static build. The mission can run without a live NASA API request. A turn referencing the SEP event activates the shelter decision. The briefing shows the original observation time, observing instrument, and a link to the NASA catalog. The observation supplies the event metadata. The placement of the alert in the story, radiation score, and shelter effect are game design parameters. Treat the event and the illumination sequence as inputs to a fictional scenario.
+
 ## First pull requests
 
 | Branch | Deliverable | Acceptance check |
 | --- | --- | --- |
 | `feat/app-shell` | Vite entry point, TypeScript configuration and shared game types | A fresh checkout installs dependencies and produces a static build. |
 | `feat/turn-engine` | Forecast, resolution and outcome | A scripted run covers shadow, shelter, harvest and over-budget input. |
-| `feat/mission-data` | Six-turn scenario and NASA frame references | Each illumination state points to a source frame and the mission has a winning route. |
+| `feat/mission-data` | Six-turn scenario linked to NASA SVS frames and the archived DONKI event | Each illumination state points to a frame. The DONKI record triggers the alert, the briefing links to its source, and the mission has a winning route. |
 | `feat/mission-screen` | Briefing, resource controls, debrief and restart | A player can complete and replay the mission on phone and desktop. |
 
 Land the shell and shared types first so the engine, data and UI can develop against the same contract. A first playable build is ready once the real scenario runs through the UI and the debrief explains both a successful and a failed mission.

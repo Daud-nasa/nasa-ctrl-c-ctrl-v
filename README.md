@@ -6,7 +6,7 @@ Lunar Shift is a short browser-based mission trainer for students. Players run a
 
 ## MVP
 
-- One mission with a fixed sequence of sunlight, shadow, and a radiation alert.
+- One mission with sunlight and shadow derived from NASA SVS frames and a shelter decision triggered by an archived NASA DONKI solar particle event.
 - Each turn, the player decides which systems to power and whether to move the crew into shelter.
 - A mission debrief explains how the player's decisions affected crew safety and the harvest.
 
@@ -14,6 +14,7 @@ Lunar Shift is a short browser-based mission trainer for students. Players run a
 
 - [Architecture and first pull requests](docs/architecture.md)
 - [NASA sources and game assumptions](docs/sources.md)
+- [Archived NASA DONKI event selected for the mission](src/data/nasa/donki-sep-2024-05-11.json)
 
 The repository currently contains the project plan. The playable build begins with the simulation and mission data described in the architecture.
 
