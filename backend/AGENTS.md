@@ -15,13 +15,17 @@ The Java 21 / Spring Boot backend owns mission scenarios, gameplay calculations,
 
 ## Build, Run, and Verify
 
-Use Java 21 and Gradle 8.14 or later. There is no Gradle wrapper. From `backend/`:
+Use Java 21. The checked-in wrapper pins Gradle 8.14.7. From `backend/`:
 
-- `gradle bootRun` starts the API on port `8080`.
-- `gradle test` runs deterministic engine and MockMvc API tests.
-- `gradle build` compiles, tests, and packages the service.
+- `./gradlew bootRun` starts the API on port `8080`.
+- `./gradlew test` runs deterministic engine and MockMvc API tests.
+- `./gradlew build` compiles, tests, and packages the service.
 
 Set `NASA_API_KEY` in the environment to use the NASA proxy endpoint. Configure browser development origins with `FRONTEND_ALLOWED_ORIGINS`; the default allows localhost port `3000`.
+
+## Render
+
+The root Blueprint deploys `lunar-shift-backend` from `backend/Dockerfile`, with `/actuator/health` as its health check. On Blueprint setup, configure `NASA_API_KEY` and the deployed frontend URL in `FRONTEND_ALLOWED_ORIGINS`; keep both out of source control.
 
 ## Conventions and NASA Data
 

@@ -1,7 +1,8 @@
 package org.lunarshift.backend.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.time.LocalDate;
+import java.util.List;
+import org.lunarshift.backend.dto.NasaSepEvent;
 import org.lunarshift.backend.service.NasaDonkiService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,7 +20,7 @@ public class NasaController {
   }
 
   @GetMapping("/solar-particle-events")
-  public JsonNode getSolarParticleEvents(
+  public List<NasaSepEvent> getSolarParticleEvents(
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
     return nasaDonkiService.getSolarEnergeticParticleEvents(startDate, endDate);

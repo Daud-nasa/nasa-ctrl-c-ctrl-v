@@ -4,17 +4,17 @@
 
 Lunar Shift is a short browser mission trainer for students ages 10–14. The existing browser MVP is built with Vite and TypeScript. The project is being rebuilt so the Java backend owns the game rules and API, while a separate frontend handles presentation and stores player progress in browser storage.
 
-The Java 21 / Spring Boot backend in `backend/` provides the mission and turn API. The current Render configuration still targets the existing static frontend; backend deployment is out of scope until requested.
+The Java 21 / Spring Boot backend in `backend/` provides the mission and turn API. Render deploys the existing static frontend and the backend as a Docker-based Web Service; provide API keys and frontend origins through Render environment variables.
 
 ## Project Structure
 
 - `src/main.ts` is the browser entry point; `src/styles.css` contains global styles.
 - `src/game/` and `src/data/` contain the existing TypeScript engine and scenario; the backend's Java engine and bundled scenario are authoritative for the rebuilt API.
-- `backend/src/main/java/org/lunarshift/backend/` contains the Java API, scenario catalog, and deterministic game engine. `backend/src/main/resources/missions/` contains the server scenario.
+- `backend/src/main/java/org/lunarshift/backend/` contains the Java API, scenario catalog, and deterministic game engine. `backend/src/main/resources/missions/` contains the server scenario; `backend/Dockerfile` builds the Render service.
 - `backend/openapi.yaml` defines the frontend contract; `backend/README.md` shows the local request flow. `src/data/nasa/` contains an archived NASA source snapshot.
 - `docs/architecture.md` describes the game architecture and work sequence. `docs/sources.md` records NASA references, data derivation, credits, and game-balance assumptions.
 - `backend/` is the Java 21 / Spring Boot API project. Its local instructions are in `backend/AGENTS.md`.
-- `render.yaml` configures the static site deployment. There are currently no Dockerfiles or Docker Compose files.
+- `render.yaml` configures the static frontend and backend deployments. The backend uses its own Dockerfile; there is no Docker Compose setup.
 
 Keep source evidence distinct from game design values. NASA materials inform the illumination sequence and provide mission context; solar output, system costs, radiation scores, crop timing, and victory thresholds are scenario-authored game units, not NASA measurements. Preserve source URLs and NASA credits when changing scenario data.
 
@@ -38,9 +38,9 @@ From the repository root:
 - `npm run build` type-checks and builds the static site into `dist/`.
 - `npm run preview` serves the built site locally.
 
-For the backend, use Java 21 and Gradle 8.14 or later. From `backend/`, run `gradle bootRun` to start it and `gradle build` to compile/package it. The backend has no Gradle wrapper.
+For the backend, use Java 21. From `backend/`, run `./gradlew bootRun` to start it and `./gradlew build` to compile/package it with the pinned Gradle version.
 
-The backend uses JUnit through Spring Boot Starter Test; run `gradle test` from `backend/`. There is no frontend test runner. Do not introduce a frontend test framework unless the task calls for it.
+The backend uses JUnit through Spring Boot Starter Test; run `./gradlew test` from `backend/`. There is no frontend test runner. Do not introduce a frontend test framework unless the task calls for it.
 
 ## Implementation Conventions
 
@@ -60,7 +60,7 @@ The backend uses JUnit through Spring Boot Starter Test; run `gradle test` from 
 
 ## Verification
 
-For frontend behavior or type changes, run `npm run typecheck` and `npm run build` when verification is requested or appropriate. For backend changes, run `gradle build` from `backend/` when Gradle is available. Builds and automated tests must not require a live NASA service.
+For frontend behavior or type changes, run `npm run typecheck` and `npm run build` when verification is requested or appropriate. For backend changes, run `./gradlew build` from `backend/`. Builds and automated tests must not require a live NASA service.
 
 When a test framework is introduced, prioritize deterministic engine cases for sunlight and shadow, shelter, harvest, over-budget choices, and successful and failed missions. Keep the phone and desktop layouts usable for visible UI changes.
 
@@ -68,4 +68,4 @@ When a test framework is introduced, prioritize deterministic engine cases for s
 
 Use a focused branch and concise imperative commit summary. PRs should describe the change and verification; include a screenshot for visible UI changes. Coordinate shared scenario/type changes with dependent work.
 
-Do not commit bot tokens, credentials, or private deployment values. The Telegram integration uses the client SDK; the game must not require a bot token. Do not add Docker or backend deployment infrastructure without an explicit requirement.
+Do not commit bot tokens, credentials, or private deployment values. The Telegram integration uses the client SDK; the game must not require a bot token. Keep the backend Docker image and Render configuration limited to the explicitly requested Java service.
