@@ -35,6 +35,18 @@ docs/
 
 The UI reads the turn briefing, collects a choice, and asks the engine for a forecast. The engine uses the same calculation on confirmation so preview and outcome agree. Available energy comes from panels and the battery. System loads subtract from it and any remaining energy carries over up to battery capacity. If a choice exceeds the energy budget, the UI asks the player to adjust it. The engine advances a valid turn, records consequences, and checks whether the mission has ended.
 
+The engine API is `forecastTurn(mission, state, choice)` and `resolveTurn(mission, state, choice)` from `src/game/engine.ts`. For example:
+
+```ts
+const forecast = forecastTurn(mission, state, choice);
+if (forecast.status === 'within-budget') {
+  const result = resolveTurn(mission, state, choice);
+  // Render result.state, result.outcome, and result.reasons.
+}
+```
+
+Mission-authored `rules` contain the food consumption, crop growth and harvest values, radiation exposure with and without shelter, and radiation thresholds for crew status. These values belong to the scenario; the engine does not supply balancing defaults.
+
 The mission succeeds after six turns when the crew meets the scenario's safety conditions and reaches the harvest target. Include both a winning route and a losing route in the first engine verification. The solar output, timings for crop growth, and radiation scores use game units.
 
 Bundle the archived event and the chosen illumination values with the static build. The mission can run without a live NASA API request. A turn referencing the SEP event activates the shelter decision. The briefing shows the original observation time, observing instrument, and a link to the NASA catalog. The observation supplies the event metadata. The placement of the alert in the story, radiation score, and shelter effect are game design parameters. Treat the event and the illumination sequence as inputs to a fictional scenario.
