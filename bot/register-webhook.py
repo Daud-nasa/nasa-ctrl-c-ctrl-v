@@ -1,8 +1,13 @@
 import getpass
 import json
 import re
-import urllib.error
-import urllib.request
+import shutil
+import subprocess
+
+
+curl = shutil.which('curl')
+if not curl:
+    raise SystemExit('Install curl before registering the webhook.')
 
 
 url = input('Render bot service URL (https://…onrender.com): ').strip()
@@ -17,25 +22,31 @@ secret = getpass.getpass('TELEGRAM_WEBHOOK_SECRET from Render: ').strip()
 if not re.fullmatch(r'[A-Za-z0-9_-]{1,256}', secret):
     raise SystemExit('Invalid Telegram webhook secret format.')
 
-request = urllib.request.Request(
-    f'https://api.telegram.org/bot{token}/setWebhook',
-    data=json.dumps({
-        'url': f'{url.rstrip("/")}/telegram',
-        'secret_token': secret,
-        'allowed_updates': ['message'],
-    }).encode(),
-    headers={'Content-Type': 'application/json'},
+# Pass credentials through stdin so they stay out of the process arguments.
+payload = json.dumps({
+    'url': f'{url.rstrip("/")}/telegram',
+    'secret_token': secret,
+    'allowed_updates': ['message'],
+})
+config = f'url = "https://api.telegram.org/bot{token}/setWebhook"\n'
+config += f'data-binary = {json.dumps(payload)}\n'
+
+reply = subprocess.run(
+    [curl, '-q', '--silent', '--max-time', '20', '--proto', '=https',
+     '--header', 'Content-Type: application/json', '--config', '-'],
+    input=config, capture_output=True, text=True,
 )
+if reply.returncode:
+    raise SystemExit(f'Could not reach the Telegram Bot API (curl exit {reply.returncode}).')
 
 try:
-    with urllib.request.urlopen(request, timeout=15) as response:
-        result = json.load(response)
-except urllib.error.HTTPError as error:
-    raise SystemExit(f'Telegram rejected webhook registration (HTTP {error.code}).') from None
-except urllib.error.URLError:
-    raise SystemExit('Could not reach the Telegram Bot API.') from None
+    result = json.loads(reply.stdout)
+except ValueError:
+    raise SystemExit('Telegram returned an invalid API response.') from None
 
 if not result.get('ok') or result.get('result') is not True:
-    raise SystemExit('Telegram did not register the webhook.')
+    code = result.get('error_code')
+    detail = f' (HTTP {code})' if isinstance(code, int) else ''
+    raise SystemExit(f'Telegram did not register the webhook{detail}.')
 
 print('Webhook registered. Send /start to your bot in a private Telegram chat.')
