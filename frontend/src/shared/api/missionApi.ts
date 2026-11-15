@@ -12,8 +12,52 @@ export type MissionState = {
 
 export type MissionTurn = {
   illumination: 'sunlight' | 'shadow'
+  illuminationSourceUrl?: string
+  illuminationFrameNumber?: number
   illuminationAtUtc: string
   radiationEventId?: string
+}
+
+export type MissionRules = {
+  harvestThreshold: number
+  crewCriticalRadiation: number
+}
+
+export type MissionIlluminationSource = {
+  sourceUrl: string
+  visualizationYear: number
+  fieldOfView: string
+  credits: string[]
+}
+
+export type MissionRadiationEvent = {
+  activityId: string
+  eventType: string
+  observedAtUtc: string
+  observatory: string
+  instrument: string
+  sourceUrl: string
+}
+
+export type PlayerChoice = {
+  powerLifeSupport: boolean
+  powerGreenhouse: boolean
+  shelterCrew: boolean
+}
+
+export type ForecastResponse = {
+  status: 'within-budget' | 'over-budget'
+  availableEnergy: number
+  requiredEnergy: number
+}
+
+export type TurnResolutionResponse = {
+  status: 'resolved' | 'over-budget'
+  availableEnergy: number
+  requiredEnergy: number
+  state?: MissionState
+  outcome?: 'in-progress' | 'success' | 'failure'
+  reasons?: string[]
 }
 
 export type Mission = {
@@ -27,16 +71,69 @@ export type Mission = {
   lifeSupportCost: number
   greenhouseCost: number
   harvestTarget: number
+  rules: MissionRules
+  illuminationSource?: MissionIlluminationSource
+  radiationEvents?: Record<string, MissionRadiationEvent>
 }
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api/v1'
+const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL
+const apiBaseUrls = [
+  configuredApiBaseUrl,
+  ...(import.meta.env.DEV ? ['http://localhost:8080/api/v1', 'http://localhost:8081/api/v1'] : []),
+  'https://lunar-shift-backend.onrender.com/api/v1',
+  'https://nasa-ctrl-c-ctrl-v-1.onrender.com/api/v1',
+].filter((url, index, urls): url is string => Boolean(url) && urls.indexOf(url) === index)
 
-export async function getMission(missionId: string): Promise<Mission> {
-  const response = await fetch(`${apiBaseUrl}/missions/${missionId}`)
+let activeApiBaseUrl = apiBaseUrls[0]
 
-  if (!response.ok) {
-    throw new Error(`Mission request failed (${response.status})`)
+async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+  let lastError: Error | null = null
+  const candidates = [activeApiBaseUrl, ...apiBaseUrls.filter((url) => url !== activeApiBaseUrl)]
+
+  for (const baseUrl of candidates) {
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), 8_000)
+
+    try {
+      const response = await fetch(`${baseUrl}${path}`, { ...init, signal: controller.signal })
+      const contentType = response.headers.get('content-type') ?? ''
+      if (!response.ok || !contentType.includes('application/json')) {
+        throw new Error(`API request failed at ${baseUrl} (${response.status})`)
+      }
+
+      activeApiBaseUrl = baseUrl
+      return await response.json() as T
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('API request failed')
+    } finally {
+      window.clearTimeout(timeout)
+    }
   }
 
-  return response.json() as Promise<Mission>
+  throw lastError ?? new Error('No API endpoint is available')
+}
+
+export async function getMission(missionId: string): Promise<Mission> {
+  return requestJson<Mission>(`/missions/${missionId}`)
+}
+
+async function postTurn(
+  missionId: string,
+  endpoint: 'forecast' | 'turns',
+  state: MissionState,
+  choice: PlayerChoice,
+) {
+  return requestJson<ForecastResponse | TurnResolutionResponse>(`/missions/${missionId}/${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ state, choice }),
+  })
+}
+
+export function forecastTurn(missionId: string, state: MissionState, choice: PlayerChoice) {
+  return postTurn(missionId, 'forecast', state, choice) as Promise<ForecastResponse>
+}
+
+export function resolveTurn(missionId: string, state: MissionState, choice: PlayerChoice) {
+  return postTurn(missionId, 'turns', state, choice) as Promise<TurnResolutionResponse>
 }
