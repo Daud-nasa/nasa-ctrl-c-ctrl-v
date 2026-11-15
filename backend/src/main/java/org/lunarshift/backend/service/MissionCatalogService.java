@@ -58,9 +58,18 @@ public class MissionCatalogService {
         || scenario.radiationEvents() == null) {
       throw new IllegalStateException("Mission scenario is missing required fields.");
     }
-    if (scenario.batteryCapacity() < 0 || scenario.sunlightPower() < 0
-        || scenario.lifeSupportCost() < 0 || scenario.greenhouseCost() < 0) {
-      throw new IllegalStateException("Mission scenario contains negative energy values.");
+    if (scenario.batteryCapacity() < 0 || scenario.oxygenCapacity() < 0 || scenario.sunlightPower() < 0
+        || scenario.lifeSupportCost() < 0 || scenario.greenhouseCost() < 0 || scenario.shelterCost() < 0
+        || scenario.minimumEndingBattery() < 0 || scenario.minimumEndingBattery() > scenario.batteryCapacity()) {
+      throw new IllegalStateException("Mission scenario contains invalid capacities or energy values.");
+    }
+    if (scenario.initialState().batteryCharge() < 0
+        || scenario.initialState().batteryCharge() > scenario.batteryCapacity()
+        || scenario.initialState().oxygenReserve() < 0
+        || scenario.initialState().oxygenReserve() > scenario.oxygenCapacity()
+        || scenario.rules().oxygenConsumptionPerTurn() < 0
+        || scenario.rules().oxygenProductionPerLifeSupportTurn() < 0) {
+      throw new IllegalStateException("Mission scenario contains invalid initial resource values.");
     }
     for (MissionScenario.MissionTurn turn : scenario.turns()) {
       if (turn == null || (!"sunlight".equals(turn.illumination()) && !"shadow".equals(turn.illumination()))) {

@@ -12,10 +12,13 @@ public record MissionScenario(
     MissionState initialState,
     List<MissionTurn> turns,
     int batteryCapacity,
+    int oxygenCapacity,
     int sunlightPower,
     int lifeSupportCost,
     int greenhouseCost,
+    int shelterCost,
     int harvestTarget,
+    int minimumEndingBattery,
     MissionRules rules,
     IlluminationSource illuminationSource,
     Map<String, MissionRadiationEvent> radiationEvents,
@@ -24,6 +27,7 @@ public record MissionScenario(
   public record MissionState(
       int turnIndex,
       int batteryCharge,
+      int oxygenReserve,
       int foodReserve,
       int cropProgress,
       int harvestTotal,
@@ -45,6 +49,8 @@ public record MissionScenario(
 
   public record MissionRules(
       int foodConsumptionPerTurn,
+      int oxygenConsumptionPerTurn,
+      int oxygenProductionPerLifeSupportTurn,
       int cropGrowthPerGreenhouseTurn,
       int harvestThreshold,
       int harvestYield,

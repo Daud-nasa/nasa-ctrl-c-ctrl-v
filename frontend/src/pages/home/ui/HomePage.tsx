@@ -24,12 +24,45 @@ type ChatMessage = {
   text: string
 }
 
+type MissionOutcome = 'success' | 'failure' | null
+
+type SavedMissionProgress = {
+  state: MissionState
+  outcome: MissionOutcome
+  reasons: string[]
+}
+
+function isMissionState(value: unknown): value is MissionState {
+  if (typeof value !== 'object' || value === null) return false
+
+  const state = value as Partial<MissionState>
+  return Number.isInteger(state.turnIndex)
+    && Number.isInteger(state.batteryCharge)
+    && Number.isInteger(state.oxygenReserve)
+    && Number.isInteger(state.foodReserve)
+    && Number.isInteger(state.cropProgress)
+    && Number.isInteger(state.harvestTotal)
+    && Number.isInteger(state.radiationScore)
+    && (state.crewStatus === 'safe' || state.crewStatus === 'at-risk' || state.crewStatus === 'critical')
+}
+
+function isSavedMissionProgress(value: unknown): value is SavedMissionProgress {
+  if (typeof value !== 'object' || value === null) return false
+
+  const progress = value as Partial<SavedMissionProgress>
+  return isMissionState(progress.state)
+    && (progress.outcome === null || progress.outcome === 'success' || progress.outcome === 'failure')
+    && Array.isArray(progress.reasons)
+    && progress.reasons.every((reason) => typeof reason === 'string')
+}
+
 export function HomePage() {
   const [mission, setMission] = useState<Mission | null>(null)
   const [state, setState] = useState<MissionState | null>(null)
   const [choice, setChoice] = useState<PlayerChoice>(defaultChoice)
   const [forecast, setForecast] = useState<ForecastResponse | null>(null)
   const [outcome, setOutcome] = useState<'success' | 'failure' | null>(null)
+  const [lastReasons, setLastReasons] = useState<string[]>([])
   const [isResolving, setIsResolving] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isBriefingOpen, setIsBriefingOpen] = useState(false)
@@ -44,10 +77,21 @@ export function HomePage() {
       const loadedMission = await getMission(missionId)
       const savedState = window.localStorage.getItem(savedStateKey)
       let nextState = loadedMission.initialState
+      let nextOutcome: MissionOutcome = null
+      let nextReasons: string[] = []
 
       if (savedState) {
         try {
-          nextState = JSON.parse(savedState) as MissionState
+          const savedProgress: unknown = JSON.parse(savedState)
+          if (isSavedMissionProgress(savedProgress)
+            && savedProgress.state.oxygenReserve <= loadedMission.oxygenCapacity
+            && savedProgress.state.batteryCharge <= loadedMission.batteryCapacity) {
+            nextState = savedProgress.state
+            nextOutcome = savedProgress.outcome
+            nextReasons = savedProgress.reasons
+          } else {
+            window.localStorage.removeItem(savedStateKey)
+          }
         } catch {
           window.localStorage.removeItem(savedStateKey)
         }
@@ -55,7 +99,8 @@ export function HomePage() {
 
       setMission(loadedMission)
       setState(nextState)
-      setOutcome(null)
+      setOutcome(nextOutcome)
+      setLastReasons(nextReasons)
       setForecast(null)
       setIsBriefingOpen(true)
       setChatMessages([])
@@ -73,6 +118,7 @@ export function HomePage() {
     setChoice(defaultChoice)
     setForecast(null)
     setOutcome(null)
+    setLastReasons([])
     setIsBriefingOpen(false)
     setChatMessages([])
     setError(null)
@@ -83,11 +129,15 @@ export function HomePage() {
     const currentTurn = mission.turns[currentState.turnIndex]
 
     if (!currentTurn) {
-      if (outcome === 'failure') {
-        return <MissionDefeatModal onRestart={restartMission} />
-      }
-      return <MissionSuccessModal onRestart={restartMission} />
+      return outcome === 'success'
+        ? <MissionSuccessModal onRestart={restartMission} />
+        : <MissionDefeatModal onRestart={restartMission} reasons={lastReasons} />
     }
+
+    const projectedFinalBattery = forecast?.status === 'within-budget'
+      && currentState.turnIndex === mission.turns.length - 1
+      ? Math.min(mission.batteryCapacity, forecast.availableEnergy - forecast.requiredEnergy)
+      : null
 
     async function previewChoice() {
       setIsResolving(true)
@@ -124,12 +174,15 @@ export function HomePage() {
           ...reportMessages,
         ])
 
+        const resolvedOutcome: MissionOutcome = result.outcome === 'success' || result.outcome === 'failure'
+          ? result.outcome
+          : null
+        setOutcome(resolvedOutcome)
+        const reasons = result.reasons ?? []
+        setLastReasons(reasons)
         if (result.state) {
           setState(result.state)
-          window.localStorage.setItem(savedStateKey, JSON.stringify(result.state))
-        }
-        if (result.outcome === 'success' || result.outcome === 'failure') {
-          setOutcome(result.outcome)
+          window.localStorage.setItem(savedStateKey, JSON.stringify({ state: result.state, outcome: resolvedOutcome, reasons }))
         }
       } catch {
         setError('Could not resolve this shift. Check that the backend is running.')
@@ -183,18 +236,21 @@ export function HomePage() {
             <div className="panel-kicker"><span>OUTPOST SYSTEMS</span><span className="online-label"><i /> ONLINE</span></div>
             <div className="resource-stack">
               <ResourceMeter icon="battery" label="Battery charge" value={state.batteryCharge} max={mission.batteryCapacity} display={`${state.batteryCharge} / ${mission.batteryCapacity}`} tone="blue" />
+              <ResourceMeter icon="oxygen" label="Oxygen reserve" value={state.oxygenReserve} max={mission.oxygenCapacity} display={`${state.oxygenReserve} / ${mission.oxygenCapacity}`} tone="blue" />
               <ResourceMeter icon="food" label="Food reserve" value={state.foodReserve} max={Math.max(8, mission.initialState.foodReserve)} display={`${state.foodReserve} meals`} tone="green" />
               <ResourceMeter icon="crop" label="Crop growth" value={state.cropProgress} max={mission.rules.harvestThreshold} display={`${state.cropProgress} / ${mission.rules.harvestThreshold}`} tone="amber" />
               <ResourceMeter icon="radiation" label="Radiation load" value={state.radiationScore} max={mission.rules.crewCriticalRadiation} display={`${state.radiationScore} pts`} tone="red" />
             </div>
             <div className={`crew-console crew-console--${state.crewStatus}`}><span className="crew-icon">✦</span><div><span>CREW CONDITION</span><strong>{state.crewStatus.replace('-', ' ')}</strong></div><i /></div>
             <div className="harvest-target"><span>HARVEST TARGET</span><strong>{String(state.harvestTotal).padStart(2, '0')} <small>/ {String(mission.harvestTarget).padStart(2, '0')}</small></strong></div>
+            <div className="harvest-target"><span>FINAL BATTERY RESERVE</span><strong>≥ {mission.minimumEndingBattery} <small>units</small></strong></div>
           </aside>
 
           <section className="game-panel game-panel--life-bars" aria-label="Outpost life indicators">
             <div className="panel-kicker"><span>OUTPOST STATUS</span><span>LIVE</span></div>
             <div className="resource-stack">
               <ResourceMeter icon="battery" label="Battery charge" value={state.batteryCharge} max={mission.batteryCapacity} display={`${state.batteryCharge} / ${mission.batteryCapacity}`} tone="blue" />
+              <ResourceMeter icon="oxygen" label="Oxygen reserve" value={state.oxygenReserve} max={mission.oxygenCapacity} display={`${state.oxygenReserve} / ${mission.oxygenCapacity}`} tone="blue" />
               <ResourceMeter icon="food" label="Food reserve" value={state.foodReserve} max={Math.max(8, mission.initialState.foodReserve)} display={`${state.foodReserve} meals`} tone="green" />
               <ResourceMeter icon="crop" label="Crop growth" value={state.cropProgress} max={mission.rules.harvestThreshold} display={`${state.cropProgress} / ${mission.rules.harvestThreshold}`} tone="amber" />
               <ResourceMeter icon="radiation" label="Radiation load" value={state.radiationScore} max={mission.rules.crewCriticalRadiation} display={`${state.radiationScore} pts`} tone="red" />
@@ -220,9 +276,9 @@ export function HomePage() {
         <section className="game-panel game-panel--controls">
           <div className="controls-heading"><div><span className="panel-kicker">SHIFT CONFIGURATION</span><h2>Allocate your resources.</h2></div><p>Choose the systems to power. The mission engine will forecast the consequences.</p></div>
           <div className="choice-grid">
-            <Choice icon="life" checked={choice.powerLifeSupport} onChange={() => updateChoice('powerLifeSupport')} title="Life support" detail={`-${mission.lifeSupportCost} energy`} />
-            <Choice icon="greenhouse" checked={choice.powerGreenhouse} onChange={() => updateChoice('powerGreenhouse')} title="Greenhouse" detail={`-${mission.greenhouseCost} energy`} />
-            <Choice icon="shelter" checked={choice.shelterCrew} onChange={() => updateChoice('shelterCrew')} title="Shelter crew" detail={currentTurn.radiationEventId ? 'Radiation protection' : 'No event this shift'} />
+            <Choice icon="life" checked={choice.powerLifeSupport} onChange={() => updateChoice('powerLifeSupport')} title="Life support" detail={choice.powerLifeSupport ? `-${mission.lifeSupportCost} energy · maintains oxygen` : `Off · oxygen -${mission.rules.oxygenConsumptionPerTurn}`} />
+            <Choice icon="greenhouse" checked={choice.powerGreenhouse} onChange={() => updateChoice('powerGreenhouse')} title="Greenhouse" detail={choice.powerGreenhouse ? `-${mission.greenhouseCost} energy · ${choice.shelterCrew ? 'growth paused in shelter' : `crop +${mission.rules.cropGrowthPerGreenhouseTurn}`}` : 'Off · no crop growth'} />
+            <Choice icon="shelter" checked={choice.shelterCrew} onChange={() => updateChoice('shelterCrew')} title="Shelter crew" detail={choice.shelterCrew ? `-${mission.shelterCost} energy · ${currentTurn.radiationEventId ? 'radiation shield' : 'no event'} · pauses crop` : `Off · ${currentTurn.radiationEventId ? 'radiation exposure' : 'no event'}`} />
           </div>
           <div className="action-row">
             <button className="secondary-button" onClick={previewChoice} disabled={isResolving}><Icon name="intel" /> Preview</button>
@@ -230,13 +286,16 @@ export function HomePage() {
               <Icon name="play" /> {isResolving ? 'Calculating…' : 'Complete shift'}
             </button>
           </div>
-          {forecast && <p className={`forecast forecast--${forecast.status}`}>Energy: {forecast.availableEnergy} available / {forecast.requiredEnergy} required — {forecast.status === 'within-budget' ? 'within budget' : 'over budget'}</p>}
+          {forecast && <p className={`forecast forecast--${forecast.status} ${projectedFinalBattery !== null && projectedFinalBattery < mission.minimumEndingBattery ? 'forecast--reserve-low' : ''}`}>
+            Energy: {forecast.availableEnergy} available / {forecast.requiredEnergy} required — {forecast.status === 'within-budget' ? 'within budget' : 'over budget'}
+            {projectedFinalBattery !== null && ` · Final battery ${projectedFinalBattery} / ${mission.minimumEndingBattery} required`}
+          </p>}
           {error && <p className="error-message" role="alert">{error}</p>}
         </section>
         </div>
         {isBriefingOpen && <MissionBriefing mission={mission} remainingShifts={mission.turns.length - state.turnIndex} onClose={() => setIsBriefingOpen(false)} />}
         {outcome === 'success' && <MissionSuccessModal onRestart={restartMission} />}
-        {outcome === 'failure' && <MissionDefeatModal onRestart={restartMission} />}
+        {outcome === 'failure' && <MissionDefeatModal onRestart={restartMission} reasons={lastReasons} />}
       </main>
     )
   }
@@ -248,11 +307,12 @@ export function HomePage() {
   )
 }
 
-type IconName = 'battery' | 'food' | 'crop' | 'radiation' | 'life' | 'greenhouse' | 'shelter' | 'command' | 'outpost' | 'systems' | 'intel' | 'settings' | 'play'
+type IconName = 'battery' | 'oxygen' | 'food' | 'crop' | 'radiation' | 'life' | 'greenhouse' | 'shelter' | 'command' | 'outpost' | 'systems' | 'intel' | 'settings' | 'play'
 
 function Icon({ name }: { name: IconName }) {
   const paths: Record<IconName, string> = {
     battery: 'M13 2 4 14h7l-1 8 9-12h-7l1-8Z',
+    oxygen: 'M12 2c-3.2 4.2-5.5 7.3-5.5 10.5a5.5 5.5 0 0 0 11 0C17.5 9.3 15.2 6.2 12 2Zm-2 11.5a2 2 0 0 0 2 2',
     food: 'M5 3v8m0-4h3m-3 0H2m3 4v9m12-17c2 2 2 5 0 7m0-7v17M15 3c-2 2-2 5 0 7',
     crop: 'M12 21V10m0 5c-4 0-6-2-6-6 4 0 6 2 6 6Zm0-3c0-4 2-6 6-6 0 4-2 6-6 6Z',
     radiation: 'M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0M12 2a10 10 0 0 1 8.7 5l-4.3 2.5A5 5 0 0 0 12 7V2Zm8.7 15A10 10 0 0 1 3.3 17l4.3-2.5A5 5 0 0 0 12 17v5ZM3.3 7a10 10 0 0 1 17.4 0L16.4 9.5A5 5 0 0 0 12 7V2Z',
@@ -324,7 +384,7 @@ function MissionSuccessModal({ onRestart }: { onRestart: () => void }) {
       <section className="success-modal__card">
         <span className="success-modal__signal">OUTPOST STABLE</span>
         <h2 id="success-title">Mission complete</h2>
-        <p>The crew finished safely and harvested enough food.</p>
+        <p>The crew finished safely, harvested enough food, and saved the required battery reserve.</p>
         <button className="primary-button" type="button" onClick={onRestart}>Replay mission</button>
       </section>
     </div>
@@ -357,13 +417,14 @@ function MissionBriefing({ mission, remainingShifts, onClose }: { mission: Missi
   )
 }
 
-function MissionDefeatModal({ onRestart }: { onRestart: () => void }) {
+function MissionDefeatModal({ onRestart, reasons }: { onRestart: () => void; reasons: string[] }) {
   return (
     <div className="defeat-modal" role="dialog" aria-modal="true" aria-labelledby="defeat-title">
       <section className="defeat-modal__card">
         <span className="defeat-modal__signal">MISSION SIGNAL LOST</span>
         <h2 id="defeat-title">Mission failed</h2>
-        <p>The outpost could not meet its mission requirements. Review the resource balance and try again.</p>
+        <p>The outpost could not meet its mission requirements. Review the shift report and try again.</p>
+        {reasons.length > 0 && <ul className="defeat-modal__reasons">{reasons.slice(-3).map((reason, index) => <li key={`${index}-${reason}`}>{reason}</li>)}</ul>}
         <button className="primary-button" type="button" onClick={onRestart}>Replay mission</button>
       </section>
     </div>

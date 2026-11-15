@@ -29,6 +29,18 @@ public class MissionEngineService {
 
     MissionScenario.MissionRules rules = mission.rules();
     List<String> reasons = new ArrayList<>();
+    int oxygenReserve = Math.max(0, Math.min(mission.oxygenCapacity(),
+        state.oxygenReserve() - rules.oxygenConsumptionPerTurn()
+            + (choice.powerLifeSupport() ? rules.oxygenProductionPerLifeSupportTurn() : 0)));
+    if (choice.powerLifeSupport()) {
+      reasons.add(oxygenReserve > state.oxygenReserve()
+          ? "Life support replenished the oxygen reserve."
+          : "Life support kept the oxygen reserve stable.");
+    } else {
+      reasons.add("Life support was unpowered; oxygen reserve decreased by "
+          + rules.oxygenConsumptionPerTurn() + ".");
+    }
+
     int foodReserve = Math.max(0, state.foodReserve() - rules.foodConsumptionPerTurn());
     if (rules.foodConsumptionPerTurn() > 0) {
       reasons.add("Food reserve decreased by " + rules.foodConsumptionPerTurn() + ".");
@@ -36,7 +48,9 @@ public class MissionEngineService {
 
     int cropProgress = state.cropProgress();
     int harvestTotal = state.harvestTotal();
-    if (choice.powerGreenhouse()) {
+    if (choice.powerGreenhouse() && choice.shelterCrew()) {
+      reasons.add("Greenhouse did not grow because the crew was in the shelter.");
+    } else if (choice.powerGreenhouse()) {
       cropProgress += rules.cropGrowthPerGreenhouseTurn();
       reasons.add("Greenhouse added " + rules.cropGrowthPerGreenhouseTurn() + " crop progress.");
       if (rules.harvestThreshold() > 0) {
@@ -79,6 +93,7 @@ public class MissionEngineService {
     MissionScenario.MissionState nextState = new MissionScenario.MissionState(
         state.turnIndex() + 1,
         Math.min(mission.batteryCapacity(), energy.availableEnergy() - energy.requiredEnergy()),
+        oxygenReserve,
         foodReserve,
         cropProgress,
         harvestTotal,
@@ -89,6 +104,9 @@ public class MissionEngineService {
     if (crewStatus == MissionScenario.CrewStatus.CRITICAL) {
       outcome = "failure";
       reasons.add("Mission failed because the crew reached critical status.");
+    } else if (oxygenReserve == 0) {
+      outcome = "failure";
+      reasons.add("Mission failed because the oxygen reserve was depleted.");
     } else if (foodReserve <= 0) {
       outcome = "failure";
       reasons.add("Mission failed because the food reserve was depleted.");
@@ -99,9 +117,14 @@ public class MissionEngineService {
       } else if (harvestTotal < mission.harvestTarget()) {
         outcome = "failure";
         reasons.add("Mission failed because harvest " + harvestTotal + " was below the target " + mission.harvestTarget() + ".");
+      } else if (nextState.batteryCharge() < mission.minimumEndingBattery()) {
+        outcome = "failure";
+        reasons.add("Mission failed because the final battery reserve " + nextState.batteryCharge()
+            + " was below the required " + mission.minimumEndingBattery() + ".");
       } else {
         outcome = "success";
-        reasons.add("Mission succeeded with harvest " + harvestTotal + ", meeting the target " + mission.harvestTarget() + ".");
+        reasons.add("Mission succeeded with harvest " + harvestTotal + " and battery reserve "
+            + nextState.batteryCharge() + ", meeting both mission targets.");
       }
     }
 
@@ -113,7 +136,8 @@ public class MissionEngineService {
     int solarGeneration = "sunlight".equals(turn.illumination()) ? mission.sunlightPower() : 0;
     int availableEnergy = solarGeneration + state.batteryCharge();
     int requiredEnergy = (choice.powerLifeSupport() ? mission.lifeSupportCost() : 0)
-        + (choice.powerGreenhouse() ? mission.greenhouseCost() : 0);
+        + (choice.powerGreenhouse() ? mission.greenhouseCost() : 0)
+        + (choice.shelterCrew() ? mission.shelterCost() : 0);
     return new Energy(availableEnergy, requiredEnergy);
   }
 
@@ -128,6 +152,7 @@ public class MissionEngineService {
       throw new InvalidGameRequestException("Turn index is outside the mission.");
     }
     if (state.batteryCharge() < 0 || state.batteryCharge() > mission.batteryCapacity()
+        || state.oxygenReserve() < 0 || state.oxygenReserve() > mission.oxygenCapacity()
         || state.foodReserve() < 0 || state.cropProgress() < 0 || state.harvestTotal() < 0
         || state.radiationScore() < 0 || state.crewStatus() == null) {
       throw new InvalidGameRequestException("Mission state contains invalid resource values.");

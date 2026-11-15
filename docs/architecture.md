@@ -4,7 +4,7 @@
 
 Lunar Shift is a mission trainer for students ages 10–14. The project is being rebuilt around a Java 21 / Spring Boot backend. The backend owns mission scenario data and deterministic turn calculations. The frontend is a separate client: it renders the mission, calls the backend API, and saves returned progress in browser storage. The backend currently keeps no player data and does not use a database.
 
-The existing `src/` TypeScript engine and Vite setup are legacy frontend code. The Java API and scenario under `backend/` are the implementation target for the rebuilt game. The root Render Blueprint retains the static frontend service and defines a Docker-based backend Web Service; it requires the NASA API key and frontend origin to be supplied in Render. Spring Boot binds to Render's `PORT` environment variable and uses `8080` locally.
+The Java API and scenario under `backend/` own the current game rules. The root Render Blueprint defines a static frontend service and a Docker-based backend Web Service; it requires the NASA API key and frontend origin to be supplied in Render. Spring Boot binds to Render's `PORT` environment variable and uses `8080` locally.
 
 ## Repository Map
 
@@ -41,7 +41,7 @@ The frontend saves the returned state in browser storage and includes it in late
 
 ## Game Engine
 
-Java engine behavior is deterministic and independent of HTTP and browser code. Forecast and resolution share the same energy calculation. Resolution applies food consumption, greenhouse growth and harvest, radiation exposure, crew thresholds, and mission outcome checks using values from the scenario. Current rules do not impose an additional consequence when life support is unpowered, and shelter does not consume the greenhouse opportunity; do not present those as modeled effects.
+Java engine behavior is deterministic and independent of HTTP and browser code. Forecast and resolution share the same energy calculation. Resolution applies food and oxygen consumption, life-support oxygen production, greenhouse growth and harvest, radiation exposure, and crew thresholds using scenario values. Unpowered life support drains the two-shift oxygen reserve. Shelter costs energy and prevents greenhouse growth that shift. A successful mission must also finish with the scenario's minimum battery reserve.
 
 Scenario balancing values are authored game units. NASA observations provide mission context and selected event references; they are not direct measurements of lunar surface power, radiation dose, or food production.
 

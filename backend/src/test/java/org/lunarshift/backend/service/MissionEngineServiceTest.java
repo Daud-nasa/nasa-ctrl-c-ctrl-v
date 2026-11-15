@@ -90,13 +90,13 @@ class MissionEngineServiceTest {
 
   private MissionScenario mission(List<MissionScenario.MissionTurn> turns, int harvestTarget) {
     MissionScenario.MissionRules rules = new MissionScenario.MissionRules(
-        1, 1, 3, 1, 1, 3, 0, 1, 3);
+        1, 1, 2, 1, 3, 1, 1, 3, 0, 1, 3);
     MissionScenario.MissionRadiationEvent event = new MissionScenario.MissionRadiationEvent(
         "sep-event", "SEP", "2024-05-11T04:07:00Z", "STEREO A", "IMPACT", "https://api.nasa.gov");
     return new MissionScenario(
         "test-mission", "Test", "Test scenario", "draft",
         state(0, 12, 6, 0, 0, 0, CrewStatus.SAFE),
-        turns, 16, 8, 4, 3, harvestTarget, rules, null,
+        turns, 16, 2, 8, 4, 3, 2, harvestTarget, 0, rules, null,
         Map.of("sep-event", event), List.of());
   }
 
@@ -106,6 +106,6 @@ class MissionEngineServiceTest {
 
   private MissionScenario.MissionState state(
       int turnIndex, int battery, int food, int crop, int harvest, int radiation, CrewStatus status) {
-    return new MissionScenario.MissionState(turnIndex, battery, food, crop, harvest, radiation, status);
+    return new MissionScenario.MissionState(turnIndex, battery, 2, food, crop, harvest, radiation, status);
   }
 }

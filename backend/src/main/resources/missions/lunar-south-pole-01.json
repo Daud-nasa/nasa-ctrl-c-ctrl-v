@@ -1,11 +1,12 @@
 {
   "id": "lunar-south-pole-01",
   "title": "Lunar Shift: South Pole Outpost",
-  "briefing": "Keep the outpost powered through a six-shift illumination change. A solar particle event is reported near the midpoint; shelter the crew and grow enough food to finish safely.",
+  "briefing": "Keep the outpost powered through six shifts. Two consecutive shifts without life support deplete oxygen. Sheltering costs energy and pauses greenhouse growth. Protect the crew during the solar particle event, harvest enough food, and finish with at least 4 battery units.",
   "balanceStatus": "draft",
   "initialState": {
     "turnIndex": 0,
     "batteryCharge": 12,
+    "oxygenReserve": 2,
     "foodReserve": 6,
     "cropProgress": 0,
     "harvestTotal": 0,
@@ -52,12 +53,17 @@
     }
   ],
   "batteryCapacity": 16,
+  "oxygenCapacity": 2,
   "sunlightPower": 8,
   "lifeSupportCost": 4,
   "greenhouseCost": 3,
+  "shelterCost": 2,
   "harvestTarget": 1,
+  "minimumEndingBattery": 4,
   "rules": {
     "foodConsumptionPerTurn": 1,
+    "oxygenConsumptionPerTurn": 1,
+    "oxygenProductionPerLifeSupportTurn": 2,
     "cropGrowthPerGreenhouseTurn": 1,
     "harvestThreshold": 3,
     "harvestYield": 1,
@@ -99,6 +105,7 @@
     "Draft game values, not NASA measurements. Get designer approval before treating the scenario as balanced.",
     "Sunlight generation 8, life-support cost 4, and greenhouse cost 3 are the agreed first-episode values.",
     "Battery capacity 16 and initial charge 12 provide a playable route through the three shadow turns.",
-    "Food, growth, harvest, radiation, and crew thresholds are provisional values for route testing."
+    "Food, oxygen, growth, harvest, shelter cost, final battery reserve, radiation, and crew thresholds are provisional values for route testing.",
+    "Sheltering occupies the crew for the shift, so a powered greenhouse does not grow while shelterCrew is true."
   ]
 }

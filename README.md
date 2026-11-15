@@ -28,16 +28,23 @@ npm run dev
 
 Open the local URL printed by Vite. `npm run build` checks TypeScript and creates the static site in `frontend/dist/`. Run `npm run preview` after a build to check the production output locally.
 
-The shared game types and archived NASA data are available for the new frontend.
+The browser client loads the mission scenario and resolves turns through the Java backend. Start the backend in a second terminal:
+
+```sh
+cd backend
+./gradlew bootRun
+```
+
+The frontend defaults to the local API at `http://localhost:8080/api/v1` during development. Player progress stays in browser storage; the backend does not save player data.
 
 ## Deploy to Render and open in Telegram
 
-1. In the [Render Dashboard](https://dashboard.render.com/), choose **New → Blueprint**, connect `Daud-nasa/nasa-ctrl-c-ctrl-v` on `main`, and apply [`render.yaml`](render.yaml). It creates a free Static Site. Render builds with `npm ci --include=dev && npm run build`, publishes `dist`, and redeploys on pushes to `main`.
+1. In the [Render Dashboard](https://dashboard.render.com/), choose **New → Blueprint**, connect `Daud-nasa/nasa-ctrl-c-ctrl-v` on `main`, and apply [`render.yaml`](render.yaml). It creates the static frontend and Java backend. Set `FRONTEND_ALLOWED_ORIGINS` to the deployed frontend URL; `NASA_API_KEY` is only needed for the live NASA data endpoint.
 2. Open the HTTPS `onrender.com` URL from the completed deploy and check that the page loads.
 3. In [@BotFather](https://t.me/BotFather), create a bot with `/newbot` or select an existing bot. Run `/setmenubutton`, choose the bot, enter the Render HTTPS URL, and name the button `Play Lunar Shift`.
 4. Open the bot on your phone and tap the menu button. To add a direct `https://t.me/<bot_username>?startapp` link, enable **Main Mini App** in the bot's settings in BotFather and set the same URL.
 
-The new frontend should initialize the Telegram client SDK and run in a regular browser as well as in Telegram. The mission uses bundled data and needs no bot token or backend service.
+The frontend initializes the Telegram client SDK when opened in Telegram and also runs in a regular browser. The game requires the Java backend; the Telegram bot token is only used to configure the separate chat-reply webhook.
 
 ## Enable Telegram chat replies
 

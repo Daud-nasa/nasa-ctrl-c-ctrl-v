@@ -3,6 +3,7 @@ export type CrewStatus = 'safe' | 'at-risk' | 'critical'
 export type MissionState = {
   turnIndex: number
   batteryCharge: number
+  oxygenReserve: number
   foodReserve: number
   cropProgress: number
   harvestTotal: number
@@ -19,6 +20,9 @@ export type MissionTurn = {
 }
 
 export type MissionRules = {
+  oxygenConsumptionPerTurn: number
+  oxygenProductionPerLifeSupportTurn: number
+  cropGrowthPerGreenhouseTurn: number
   harvestThreshold: number
   crewCriticalRadiation: number
 }
@@ -67,10 +71,13 @@ export type Mission = {
   initialState: MissionState
   turns: MissionTurn[]
   batteryCapacity: number
+  oxygenCapacity: number
   sunlightPower: number
   lifeSupportCost: number
   greenhouseCost: number
+  shelterCost: number
   harvestTarget: number
+  minimumEndingBattery: number
   rules: MissionRules
   illuminationSource?: MissionIlluminationSource
   radiationEvents?: Record<string, MissionRadiationEvent>

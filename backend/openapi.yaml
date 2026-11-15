@@ -58,6 +58,7 @@ paths:
               state:
                 turnIndex: 0
                 batteryCharge: 12
+                oxygenReserve: 2
                 foodReserve: 6
                 cropProgress: 0
                 harvestTotal: 0
@@ -112,6 +113,7 @@ paths:
                     state:
                       turnIndex: 1
                       batteryCharge: 13
+                      oxygenReserve: 2
                       foodReserve: 5
                       cropProgress: 1
                       harvestTotal: 0
@@ -210,7 +212,7 @@ components:
         turnCount: { type: integer }
     Mission:
       type: object
-      required: [id, title, briefing, initialState, turns, batteryCapacity, sunlightPower, lifeSupportCost, greenhouseCost, harvestTarget, rules]
+      required: [id, title, briefing, initialState, turns, batteryCapacity, oxygenCapacity, sunlightPower, lifeSupportCost, greenhouseCost, shelterCost, harvestTarget, minimumEndingBattery, rules]
       properties:
         id: { type: string }
         title: { type: string }
@@ -223,10 +225,13 @@ components:
             type: object
             additionalProperties: true
         batteryCapacity: { type: integer }
+        oxygenCapacity: { type: integer }
         sunlightPower: { type: integer }
         lifeSupportCost: { type: integer }
         greenhouseCost: { type: integer }
+        shelterCost: { type: integer }
         harvestTarget: { type: integer }
+        minimumEndingBattery: { type: integer }
         rules:
           type: object
           additionalProperties: { type: integer }
@@ -241,10 +246,11 @@ components:
           items: { type: string }
     MissionState:
       type: object
-      required: [turnIndex, batteryCharge, foodReserve, cropProgress, harvestTotal, radiationScore, crewStatus]
+      required: [turnIndex, batteryCharge, oxygenReserve, foodReserve, cropProgress, harvestTotal, radiationScore, crewStatus]
       properties:
         turnIndex: { type: integer, minimum: 0 }
         batteryCharge: { type: integer, minimum: 0 }
+        oxygenReserve: { type: integer, minimum: 0 }
         foodReserve: { type: integer, minimum: 0 }
         cropProgress: { type: integer, minimum: 0 }
         harvestTotal: { type: integer, minimum: 0 }

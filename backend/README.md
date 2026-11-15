@@ -2,6 +2,8 @@
 
 Spring Boot API for mission scenarios, turn forecasts, turn resolution, and NASA DONKI SEP data. The backend owns the game rules. It does not store player progress; the frontend should save the returned state in browser storage and send it with each forecast or turn request.
 
+The bundled mission tracks battery, oxygen, food, harvest, and radiation. Life support replenishes oxygen, sheltering costs energy and pauses greenhouse growth, and success requires the crew to finish safely with enough food and the configured final battery reserve.
+
 ## Run locally
 
 Use Java 21:
@@ -39,6 +41,7 @@ Example request:
   "state": {
     "turnIndex": 0,
     "batteryCharge": 12,
+    "oxygenReserve": 2,
     "foodReserve": 6,
     "cropProgress": 0,
     "harvestTotal": 0,
