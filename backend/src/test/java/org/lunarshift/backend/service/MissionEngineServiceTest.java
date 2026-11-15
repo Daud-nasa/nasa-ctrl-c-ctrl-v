@@ -32,7 +32,7 @@ class MissionEngineServiceTest {
   }
 
   @Test
-  void shadowCanMakeChoiceOverBudgetWithoutAdvancingState() {
+  void resolvingAnOverBudgetChoiceFailsWithoutAdvancingState() {
     MissionScenario mission = mission(List.of(turn("shadow", null)), 0);
     MissionScenario.MissionState state = state(0, 2, 6, 0, 0, 0, CrewStatus.SAFE);
     PlayerChoice choice = new PlayerChoice(true, true, false);
@@ -43,6 +43,8 @@ class MissionEngineServiceTest {
     assertEquals(2, result.availableEnergy());
     assertEquals(7, result.requiredEnergy());
     assertNull(result.state());
+    assertEquals("failure", result.outcome());
+    assertEquals("Mission failed because the selected systems need 7 energy, but only 2 was available.", result.reasons().getFirst());
   }
 
   @Test

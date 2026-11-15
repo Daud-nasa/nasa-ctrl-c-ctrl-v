@@ -24,7 +24,9 @@ public class MissionEngineService {
     MissionScenario.MissionTurn turn = mission.turns().get(state.turnIndex());
     Energy energy = calculateEnergy(mission, state, choice);
     if (energy.requiredEnergy() > energy.availableEnergy()) {
-      return new TurnResolutionResponse("over-budget", energy.availableEnergy(), energy.requiredEnergy(), null, null, null);
+      return new TurnResolutionResponse("over-budget", energy.availableEnergy(), energy.requiredEnergy(), null, "failure",
+          List.of("Mission failed because the selected systems need " + energy.requiredEnergy()
+              + " energy, but only " + energy.availableEnergy() + " was available."));
     }
 
     MissionScenario.MissionRules rules = mission.rules();

@@ -35,7 +35,7 @@ The contract is defined in `backend/openapi.yaml`; the base URL locally is `http
 1. `GET /missions` returns available mission summaries.
 2. `GET /missions/{missionId}` returns scenario data, rules, source metadata, and the initial state.
 3. `POST /missions/{missionId}/forecast` accepts `{ state, choice }` and returns available energy, required energy, and `within-budget` or `over-budget`.
-4. `POST /missions/{missionId}/turns` accepts the same `{ state, choice }` and returns either `over-budget` without advancing or `resolved` with the next state, outcome, and reasons.
+4. `POST /missions/{missionId}/turns` accepts the same `{ state, choice }` and returns either `over-budget` as a terminal failure without advancing or `resolved` with the next state, outcome, and reasons.
 
 The frontend saves the returned state in browser storage and includes it in later requests. The backend validates its shape and values but does not authenticate or persist it. A terminal `success` or `failure` outcome ends the current mission; replay starts from the scenario's `initialState`.
 

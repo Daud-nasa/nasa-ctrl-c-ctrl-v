@@ -182,7 +182,9 @@ export function HomePage() {
         setLastReasons(reasons)
         if (result.state) {
           setState(result.state)
-          window.localStorage.setItem(savedStateKey, JSON.stringify({ state: result.state, outcome: resolvedOutcome, reasons }))
+        }
+        if (result.state || resolvedOutcome) {
+          window.localStorage.setItem(savedStateKey, JSON.stringify({ state: result.state ?? currentState, outcome: resolvedOutcome, reasons }))
         }
       } catch {
         setError('Could not resolve this shift. Check that the backend is running.')
@@ -282,12 +284,12 @@ export function HomePage() {
           </div>
           <div className="action-row">
             <button className="secondary-button" onClick={previewChoice} disabled={isResolving}><Icon name="intel" /> Preview</button>
-            <button className="primary-button" onClick={resolveChoice} disabled={isResolving || forecast?.status === 'over-budget' || Boolean(outcome)}>
-              <Icon name="play" /> {isResolving ? 'Calculating…' : 'Complete shift'}
+            <button className="primary-button" onClick={resolveChoice} disabled={isResolving || Boolean(outcome)}>
+              <Icon name="play" /> {isResolving ? 'Calculating…' : forecast?.status === 'over-budget' ? 'Accept power failure' : 'Complete shift'}
             </button>
           </div>
           {forecast && <p className={`forecast forecast--${forecast.status} ${projectedFinalBattery !== null && projectedFinalBattery < mission.minimumEndingBattery ? 'forecast--reserve-low' : ''}`}>
-            Energy: {forecast.availableEnergy} available / {forecast.requiredEnergy} required — {forecast.status === 'within-budget' ? 'within budget' : 'over budget'}
+            Energy: {forecast.availableEnergy} available / {forecast.requiredEnergy} required — {forecast.status === 'within-budget' ? 'within budget' : 'over budget; resolving this choice fails the mission'}
             {projectedFinalBattery !== null && ` · Final battery ${projectedFinalBattery} / ${mission.minimumEndingBattery} required`}
           </p>}
           {error && <p className="error-message" role="alert">{error}</p>}

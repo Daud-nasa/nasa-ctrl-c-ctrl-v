@@ -28,8 +28,8 @@ This endpoint and the forecast/turn endpoints below are available as soon as the
 
 1. Call `GET /missions` and use the returned `id` to choose a mission.
 2. Call `GET /missions/{missionId}`. Render the returned scenario and save its `initialState` in browser storage.
-3. For a proposed player choice, call `POST /missions/{missionId}/forecast` with the current state and choice. A forecast with `status: "over-budget"` should disable or explain that choice.
-4. Call `POST /missions/{missionId}/turns` with the same state and choice to resolve the turn. On `status: "resolved"`, replace the saved state with the returned state. On `status: "over-budget"`, keep the previous state unchanged.
+3. For a proposed player choice, call `POST /missions/{missionId}/forecast` with the current state and choice. A forecast with `status: "over-budget"` warns that resolving the choice will fail the mission.
+4. Call `POST /missions/{missionId}/turns` with the same state and choice to resolve it. On `status: "resolved"`, replace the saved state with the returned state. On `status: "over-budget"`, mark the mission failed; the response has no next state.
 5. Stop accepting choices when `outcome` is `success` or `failure`; offer replay using the scenario's `initialState`.
 
 To show live space-weather context for a radiation event, call `GET /nasa/solar-particle-events` with the event's UTC date as both `startDate` and `endDate`. This NASA data is briefing context; the scenario's explicit event reference continues to drive the authored turn rules.
