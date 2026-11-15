@@ -20,7 +20,7 @@ export function Welcome({ onStart, isLoading, error }: WelcomeProps) {
           <p className="eyebrow">NASA mission control · 2040 / south pole</p>
           <h1>Keep the<br /><em>outpost</em> alive.</h1>
           <p className="description">
-            Six shifts. One fragile base. Every decision changes what the crew can survive.
+            Six shifts. One fragile base. Balance power, oxygen, shelter, and the harvest.
           </p>
           <Button onClick={onStart} disabled={isLoading}>
             <span>{isLoading ? 'Loading mission…' : 'Start mission'}</span>

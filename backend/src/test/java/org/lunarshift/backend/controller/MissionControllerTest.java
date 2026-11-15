@@ -49,6 +49,7 @@ class MissionControllerTest {
           "state": {
             "turnIndex": 0,
             "batteryCharge": 12,
+            "oxygenReserve": 2,
             "foodReserve": 6,
             "cropProgress": 0,
             "harvestTotal": 0,
@@ -92,7 +93,12 @@ class MissionControllerTest {
     String outcome = "in-progress";
 
     for (int turnIndex = 0; turnIndex < mission.turns().size(); turnIndex++) {
-      PlayerChoice choice = new PlayerChoice(true, turnIndex < 3, turnIndex == 2);
+      PlayerChoice choice = switch (turnIndex) {
+        case 0, 1, 3 -> new PlayerChoice(true, true, false);
+        case 2 -> new PlayerChoice(true, false, true);
+        case 4 -> new PlayerChoice(false, false, false);
+        default -> new PlayerChoice(true, false, false);
+      };
       String requestBody = objectMapper.writeValueAsString(new TurnRequest(state, choice));
 
       ForecastResponse forecast = objectMapper.readValue(
